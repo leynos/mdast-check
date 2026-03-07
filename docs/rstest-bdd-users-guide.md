@@ -84,7 +84,7 @@ The feature file lives within the crate (commonly under `tests/features/`). The
 path to this file will be referenced by the `#[scenario]` macro in the test
 code.
 
-### Internationalised scenarios
+### Internationalized scenarios
 
 `rstest-bdd` reads the optional `# language: <code>` directive that appears at
 the top of a feature file. When a locale is specified, the parser uses that
@@ -1027,7 +1027,8 @@ that a step or scenario stopped executing. Use
 `rstest_bdd::assert_step_skipped!` to unwrap a `StepExecution::Skipped`
 outcome, optionally constraining its message, and
 `rstest_bdd::assert_scenario_skipped!` to inspect
-[`ScenarioStatus`](crate::reporting::ScenarioStatus) records. Both macros
+[`ScenarioStatus`](https://docs.rs/rstest-bdd/latest/rstest_bdd/reporting/enum.ScenarioStatus.html)
+records. Both macros
 accept `message_absent = true` to assert that no message was provided and
 substring matching to confirm that a message contains the expected reason.
 
@@ -1746,7 +1747,7 @@ assert!(err
     .contains("unrecognised boolean value 'maybe'"));
 ```
 
-[`DataTableError`]: crate::datatable::DataTableError
+[`DataTableError`]: https://docs.rs/rstest-bdd/latest/rstest_bdd/datatable/enum.DataTableError.html
 
 A Gherkin Docstring is available through an argument named `docstring` of type
 `String`. Both arguments must use these exact names and types to be detected by
