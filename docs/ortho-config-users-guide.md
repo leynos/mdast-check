@@ -81,7 +81,7 @@ let discovery = ConfigDiscovery::builder("hello_world")
     .build();
 
 if let Some(figment) = discovery.load_first()? {
-    // Extract your configuration struct from the figment here.
+    // Extract the configuration struct from the figment here.
     println!(
         "Loaded configuration from {:?}",
         discovery.candidates().first()

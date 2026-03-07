@@ -1373,8 +1373,7 @@ contracts in `rstest-bdd-harness`.
 parameters. The legacy `runtime = "tokio-current-thread"` argument in
 `scenarios!` remains supported as compatibility syntax for Tokio harness
 selection. The core crate remains immediately useful for adapter authors
-building Tokio, Graphical Processing User Interface (GPUI), or other harness
-plug-ins.
+building Tokio, `gpui`, or other harness plug-ins.
 
 ### Defining a harness adapter
 
