@@ -247,7 +247,7 @@ when `clap` emits `DisplayHelpOnMissingArgumentOrSubcommand`). When no
 translation exists, the helper returns the original `clap` error unchanged:
 
 ```rust
-use clap::CommandFactory;
+use clap::{CommandFactory, FromArgMatches};
 use ortho_config::{localize_clap_error_with_command, Localizer};
 
 # #[derive(clap::Parser)]
