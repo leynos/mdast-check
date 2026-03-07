@@ -936,10 +936,14 @@ the following steps:
 1. Build a `StepContext` and insert the test’s fixture arguments into it.
 
 2. For each step in the scenario (according to the `Given‑When‑Then` sequence),
-   look up a matching step function by `(keyword, pattern)` in the registry. A
-   missing step causes the macro to emit a compile‑time error such as
-   `No matching step definition found for: Given an undefined step`, allowing
-   detection of incomplete implementations before tests run. Multiple matching
+   look up a matching step function by `(keyword, pattern)` in the registry. By
+   default, a missing step emits a compile‑time warning and is checked again at
+   runtime so definitions can live in other crates. Enabling the
+   `compile-time-validation` or `strict-compile-time-validation` feature
+   escalates that validation during macro expansion; the strict mode promotes
+   missing-step diagnostics, such as
+   `No matching step definition found for: Given an undefined step`, to
+   compile‑time errors when all step definitions are local. Multiple matching
    definitions likewise produce an error.
 
 3. Invoke the registered step function with the `StepContext` so that fixtures
