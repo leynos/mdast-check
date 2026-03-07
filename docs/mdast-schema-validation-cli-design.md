@@ -30,6 +30,16 @@ documents are written as Markdown annotated with
 [Markdoc tag syntax](https://markdoc.dev/docs/syntax) and compiled into the
 same internal JSON Schema representation.
 
+## Related references
+
+The following repository documents should be treated as implementation
+references alongside this design:
+
+- [OrthoConfig user's guide](./ortho-config-users-guide.md) for layered CLI,
+  environment, and configuration-file loading behaviour.
+- [`rstest-bdd` user's guide](./rstest-bdd-users-guide.md) for feature-file
+  layout, fixture injection, and end-to-end behavioural test structure.
+
 ## Goals
 
 - Validate MDAST documents against user-provided JSON Schema documents.
@@ -62,7 +72,9 @@ same internal JSON Schema representation.
 - Testing must combine unit tests, snapshot tests, and Behaviour-Driven
   Development (BDD) scenarios using `rstest` and `rstest-bdd`.
 - Configuration and CLI parsing must use `ortho-config` v0.8.0 so the tool can
-  evolve without inventing a parallel configuration model.
+  evolve without inventing a parallel configuration model. Follow the layering
+  and composition guidance in
+  [OrthoConfig user's guide](./ortho-config-users-guide.md).
 - Large fixture documents should live in `.fixture` files and be loaded with
   `include_str!` to keep tests legible and diffable.
 - Friendly errors are a product requirement, not cosmetic polish.
@@ -267,6 +279,11 @@ The first release should keep precedence conventional:
 3. configuration file
 4. built-in defaults
 
+The implementation should follow the same layered precedence model and prefer
+derived configuration helpers such as composition and merge layers where they
+keep tests deterministic. See
+[OrthoConfig user's guide](./ortho-config-users-guide.md).
+
 ### Stretch goal: Markdoc-native schema mode
 
 The Markdown-native schema mode should compile a constrained subset of Markdoc
@@ -410,6 +427,11 @@ files. These tests should cover scenarios such as:
 - mapping a nested node failure back to the correct source line,
 - distinguishing invalid schema input from invalid Markdown input,
 - validating Markdoc-native schemata in experimental mode.
+
+Feature layout, fixture wiring, and step-definition behaviour should follow the
+documented `rstest-bdd` patterns for feature files, `#[scenario]` bindings,
+and fixture injection. See
+[`rstest-bdd` user's guide](./rstest-bdd-users-guide.md).
 
 ### Snapshot tests
 
