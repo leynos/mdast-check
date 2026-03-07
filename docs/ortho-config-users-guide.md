@@ -545,10 +545,10 @@ resulting in environment variables such as `APP_DB_URL`. The `features` field
 is a `Vec<String>` and accumulates values from multiple sources rather than
 overwriting them.
 
-### Customising configuration discovery
+### Customizing configuration discovery
 
 Configuration discovery can be tailored per struct using the `discovery(...)`
-attribute. The keys recognised today include:
+attribute. The keys recognized today include:
 
 - `app_name`: directory name used under XDG and application data folders.
 - `env_var`: override for the environment variable consulted before discovery
@@ -564,9 +564,10 @@ attribute. The keys recognised today include:
 - `config_cli_visible`: when `true`, the generated CLI flag appears in help
   output instead of remaining hidden.
 
-Supplying only the keys you need lets you rename the CLI flag without altering
-file discovery, or vice versa. When the attribute is omitted, the defaults
-described in [Config path override](#config-path-override) continue to apply.
+Supplying only the required keys allows the CLI flag to be renamed without
+altering file discovery, or vice versa. When the attribute is omitted, the
+defaults described in [Config path override](#config-path-override) continue to
+apply.
 
 ## Loading configuration and precedence rules
 
@@ -616,13 +617,13 @@ following steps:
 
 ### Config path override
 
-The derive macro always recognises a configuration override flag and the
-associated environment variables even when you do not declare a field
-explicitly. By default a hidden `--config-path` flag is accepted alongside
+The derive macro always recognizes a configuration override flag and the
+associated environment variables even when no explicit field is declared. By
+default a hidden `--config-path` flag is accepted alongside
 `<PREFIX>CONFIG_PATH` and the unprefixed `CONFIG_PATH`. Applying the
-struct-level `discovery(...)` attribute customises this behaviour, allowing you
-to rename or expose the CLI flag and adjust the filenames searched during
-discovery:
+struct-level `discovery(...)` attribute customizes this behaviour, allowing the
+CLI flag to be renamed or exposed and the filenames searched during discovery
+to be adjusted:
 
 ```rust
 #[derive(Debug, Deserialize, ortho_config::OrthoConfig)]
