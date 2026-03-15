@@ -1,7 +1,7 @@
 //! CLI argument definitions for MDAST Check.
 //!
 //! This module defines the command-line interface using clap's derive macros
-//! and ortho-config's declarative merging for layered configuration support.
+//! and supports layered configuration via ortho-config's declarative merging.
 //!
 //! # Configuration layers (highest to lowest precedence)
 //!
@@ -10,8 +10,6 @@
 //! 3. Configuration file (`.mdast-check.toml`)
 
 use clap::{Parser, Subcommand, ValueEnum};
-use ortho_config::declarative::MergeComposer;
-use ortho_config::{OrthoConfig, serde_json};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -41,8 +39,7 @@ pub enum OutputFormat {
 ///
 /// These fields support layered configuration via ortho-config, with CLI
 /// arguments taking precedence over environment variables and config files.
-#[derive(Debug, Clone, Deserialize, Serialize, OrthoConfig, clap::Args)]
-#[ortho_config(namespace = "validate")]
+#[derive(Debug, Clone, Deserialize, Serialize, clap::Args)]
 pub struct ValidateArgs {
     /// Path to the Markdown document to validate.
     ///
@@ -57,23 +54,12 @@ pub struct ValidateArgs {
     pub schema: Option<PathBuf>,
 
     /// Format of the schema file.
-    ///
-    /// If not specified, defaults to `json`.
-    #[arg(long, value_enum)]
-    pub schema_format: Option<SchemaFormat>,
-
-    /// Path to the configuration file.
-    ///
-    /// If not specified, searches for `.mdast-check.toml` in the current
-    /// directory and parent directories.
-    #[arg(long, value_name = "FILE")]
-    pub config: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = SchemaFormat::Json)]
+    pub schema_format: SchemaFormat,
 
     /// Output format for results.
-    ///
-    /// If not specified, defaults to `text`.
-    #[arg(long, value_enum)]
-    pub format: Option<OutputFormat>,
+    #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+    pub format: OutputFormat,
 
     /// Stop validation after the first error.
     #[arg(long, default_value_t = false)]
@@ -82,8 +68,8 @@ pub struct ValidateArgs {
     /// Maximum number of errors to report.
     ///
     /// Use `0` for unlimited errors.
-    #[arg(long, value_name = "COUNT")]
-    pub max_errors: Option<usize>,
+    #[arg(long, value_name = "COUNT", default_value_t = 0usize)]
+    pub max_errors: usize,
 
     /// Suppress non-error output.
     #[arg(long, short, default_value_t = false)]
@@ -95,13 +81,36 @@ impl Default for ValidateArgs {
         Self {
             document: None,
             schema: None,
-            schema_format: Some(SchemaFormat::Json),
-            config: None,
-            format: Some(OutputFormat::Text),
+            schema_format: SchemaFormat::Json,
+            format: OutputFormat::Text,
             fail_fast: false,
-            max_errors: Some(0),
+            max_errors: 0,
             quiet: false,
         }
+    }
+}
+
+impl ValidateArgs {
+    /// Overlays non-`None` fields from `overrides` onto `self`.
+    ///
+    /// Boolean fields (`fail_fast`, `quiet`) are always taken from `overrides`
+    /// since they have unambiguous defaults and should not persist from lower
+    /// layers when explicitly set at a higher layer.
+    #[must_use]
+    pub fn overlay(mut self, overrides: &Self) -> Self {
+        if overrides.document.is_some() {
+            self.document.clone_from(&overrides.document);
+        }
+        if overrides.schema.is_some() {
+            self.schema.clone_from(&overrides.schema);
+        }
+        self.schema_format = overrides.schema_format;
+        self.format = overrides.format;
+        self.fail_fast = overrides.fail_fast;
+        self.max_errors = overrides.max_errors;
+        self.quiet = overrides.quiet;
+
+        self
     }
 }
 
@@ -109,12 +118,6 @@ impl Default for ValidateArgs {
 #[derive(Debug, Clone, Parser)]
 #[command(name = "mdast-check", version, about, long_about = None)]
 pub struct Cli {
-    /// Path to the configuration file.
-    ///
-    /// Overrides automatic discovery of `.mdast-check.toml`.
-    #[arg(long, global = true, value_name = "FILE")]
-    pub config: Option<PathBuf>,
-
     /// Subcommand to execute.
     #[command(subcommand)]
     pub command: Commands,
@@ -127,41 +130,30 @@ pub enum Commands {
     Validate(ValidateArgs),
 }
 
-/// Merges CLI arguments with configuration layers using declarative merging.
+/// Merges CLI arguments with defaults using typed overlay.
 ///
 /// # Errors
 ///
 /// Returns [`MdastCheckError::InternalFailure`] if merging fails.
 pub fn merge_validate_args(cli_args: &ValidateArgs) -> Result<ValidateArgs, MdastCheckError> {
-    let defaults = serde_json::to_value(ValidateArgs::default()).map_err(|e| {
-        MdastCheckError::InternalFailure {
-            message: format!("Failed to serialize defaults: {e}"),
-        }
-    })?;
-
-    let cli_layer =
-        serde_json::to_value(cli_args).map_err(|e| MdastCheckError::InternalFailure {
-            message: format!("Failed to serialize CLI args: {e}"),
-        })?;
-
-    let mut composer = MergeComposer::new();
-    composer.push_defaults(defaults);
-    // TODO: Add file and environment layers when discovery is implemented.
-    composer.push_cli(cli_layer);
-
-    let merged = ValidateArgs::merge_from_layers(composer.layers()).map_err(|e| {
-        MdastCheckError::InternalFailure {
-            message: format!("Failed to merge configuration layers: {e}"),
-        }
-    })?;
-
+    // Defaults are the lowest layer; CLI is the highest.
+    let merged = ValidateArgs::default().overlay(cli_args);
     Ok(merged)
 }
 
-/// Validates that required fields are present and returns them.
+/// Validated paths extracted from `ValidateArgs`.
 ///
-/// Returns borrowed references to the document and schema paths on success,
-/// eliminating the need for callers to use `unwrap()` after validation.
+/// This struct provides named access to the required document and schema paths
+/// after validation, improving readability at call sites.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidatedPaths {
+    /// Path to the Markdown document to validate.
+    pub document: PathBuf,
+    /// Path to the schema file for validation.
+    pub schema: PathBuf,
+}
+
+/// Validates that required fields are present and returns them.
 ///
 /// # Errors
 ///
@@ -170,7 +162,7 @@ pub fn merge_validate_args(cli_args: &ValidateArgs) -> Result<ValidateArgs, Mdas
 /// # Examples
 ///
 /// ```
-/// use mdast_check::cli::{ValidateArgs, validate_required_fields};
+/// use mdast_check::cli::{ValidateArgs, ValidatedPaths, validate_required_fields};
 /// use std::path::PathBuf;
 ///
 /// let args = ValidateArgs {
@@ -178,44 +170,41 @@ pub fn merge_validate_args(cli_args: &ValidateArgs) -> Result<ValidateArgs, Mdas
 ///     schema: Some(PathBuf::from("schema.json")),
 ///     ..Default::default()
 /// };
-/// let (doc, schema) = validate_required_fields(&args).unwrap();
-/// assert_eq!(doc, &PathBuf::from("doc.md"));
-/// assert_eq!(schema, &PathBuf::from("schema.json"));
+/// let paths = validate_required_fields(&args).unwrap();
+/// assert_eq!(paths.document, PathBuf::from("doc.md"));
+/// assert_eq!(paths.schema, PathBuf::from("schema.json"));
 /// ```
-pub fn validate_required_fields(
-    args: &ValidateArgs,
-) -> Result<(&PathBuf, &PathBuf), MdastCheckError> {
+pub fn validate_required_fields(args: &ValidateArgs) -> Result<ValidatedPaths, MdastCheckError> {
     let document = args
         .document
-        .as_ref()
+        .clone()
         .ok_or_else(|| MdastCheckError::InvalidInvocation {
             message: "missing required argument: --document".into(),
         })?;
 
     let schema = args
         .schema
-        .as_ref()
+        .clone()
         .ok_or_else(|| MdastCheckError::InvalidInvocation {
             message: "missing required argument: --schema".into(),
         })?;
 
-    Ok((document, schema))
+    Ok(ValidatedPaths { document, schema })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
 
     #[test]
     fn default_validate_args_has_expected_defaults() {
         let args = ValidateArgs::default();
         assert!(args.document.is_none());
         assert!(args.schema.is_none());
-        assert_eq!(args.schema_format, Some(SchemaFormat::Json));
-        assert_eq!(args.format, Some(OutputFormat::Text));
+        assert_eq!(args.schema_format, SchemaFormat::Json);
+        assert_eq!(args.format, OutputFormat::Text);
         assert!(!args.fail_fast);
-        assert_eq!(args.max_errors, Some(0));
+        assert_eq!(args.max_errors, 0);
         assert!(!args.quiet);
     }
 
@@ -248,77 +237,79 @@ mod tests {
             schema: Some(PathBuf::from("schema.json")),
             ..Default::default()
         };
-        let (doc, schema) =
+        let paths =
             validate_required_fields(&args).expect("should succeed when both fields are present");
-        assert_eq!(doc, &PathBuf::from("doc.md"));
-        assert_eq!(schema, &PathBuf::from("schema.json"));
+        assert_eq!(paths.document, PathBuf::from("doc.md"));
+        assert_eq!(paths.schema, PathBuf::from("schema.json"));
     }
 
-    /// Verifies that CLI values override defaults via `MergeComposer`.
-    #[rstest]
-    #[case::cli_overrides_document(
-        serde_json::json!({"document": "cli.md"}),
-        "cli.md",
-    )]
-    #[case::cli_overrides_schema(
-        serde_json::json!({"schema": "cli-schema.json"}),
-        "cli-schema.json",
-    )]
-    fn cli_layer_overrides_defaults(
-        #[case] cli_value: serde_json::Value,
-        #[case] expected_path: &str,
-    ) {
-        let defaults =
-            serde_json::to_value(ValidateArgs::default()).expect("should serialize defaults");
-        let mut composer = MergeComposer::new();
-        composer.push_defaults(defaults);
-        composer.push_cli(cli_value);
-
-        let merged = ValidateArgs::merge_from_layers(composer.layers())
-            .expect("should merge layers successfully");
-
-        // Check that the CLI-supplied value won.
-        let has_doc = merged
-            .document
-            .as_ref()
-            .is_some_and(|d| d.to_str() == Some(expected_path));
-        let has_schema = merged
-            .schema
-            .as_ref()
-            .is_some_and(|s| s.to_str() == Some(expected_path));
-
-        assert!(has_doc || has_schema, "CLI value should override defaults");
-    }
-
-    /// Verifies that defaults survive when no CLI override is provided.
     #[test]
-    fn defaults_survive_without_cli_override() {
-        let defaults =
-            serde_json::to_value(ValidateArgs::default()).expect("should serialize defaults");
-        let mut composer = MergeComposer::new();
-        composer.push_defaults(defaults);
-        // Push an empty CLI layer — no overrides.
-        composer.push_cli(serde_json::json!({}));
+    fn overlay_applies_document_when_present() {
+        let defaults = ValidateArgs::default();
+        let cli_args = ValidateArgs {
+            document: Some(PathBuf::from("cli.md")),
+            ..Default::default()
+        };
 
-        let merged = ValidateArgs::merge_from_layers(composer.layers())
-            .expect("should merge layers successfully");
+        let merged = defaults.overlay(&cli_args);
 
-        assert_eq!(merged.schema_format, Some(SchemaFormat::Json));
-        assert_eq!(merged.format, Some(OutputFormat::Text));
-        assert_eq!(merged.max_errors, Some(0));
-        assert!(!merged.fail_fast);
-        assert!(!merged.quiet);
+        assert_eq!(
+            merged.document.as_deref(),
+            Some(std::path::Path::new("cli.md"))
+        );
+        // Other fields retain defaults.
+        assert!(merged.schema.is_none());
+        assert_eq!(merged.schema_format, SchemaFormat::Json);
     }
 
-    /// Verifies that `merge_validate_args` produces defaults when called with
-    /// bare `ValidateArgs`.
     #[test]
-    fn merge_validate_args_applies_defaults() {
-        let args = ValidateArgs::default();
-        let merged = merge_validate_args(&args).expect("should merge successfully");
+    fn overlay_applies_schema_when_present() {
+        let defaults = ValidateArgs::default();
+        let cli_args = ValidateArgs {
+            schema: Some(PathBuf::from("cli-schema.json")),
+            ..Default::default()
+        };
 
-        assert_eq!(merged.schema_format, Some(SchemaFormat::Json));
-        assert_eq!(merged.format, Some(OutputFormat::Text));
-        assert_eq!(merged.max_errors, Some(0));
+        let merged = defaults.overlay(&cli_args);
+
+        assert_eq!(
+            merged.schema.as_deref(),
+            Some(std::path::Path::new("cli-schema.json"))
+        );
+    }
+
+    #[test]
+    fn overlay_applies_all_boolean_flags() {
+        let defaults = ValidateArgs::default();
+        let cli_args = ValidateArgs {
+            fail_fast: true,
+            quiet: true,
+            ..Default::default()
+        };
+
+        let merged = defaults.overlay(&cli_args);
+
+        assert!(merged.fail_fast);
+        assert!(merged.quiet);
+    }
+
+    #[test]
+    fn merge_validate_args_combines_defaults_and_cli() {
+        let cli_args = ValidateArgs {
+            document: Some(PathBuf::from("doc.md")),
+            max_errors: 10,
+            ..Default::default()
+        };
+
+        let merged = merge_validate_args(&cli_args).expect("merge should succeed");
+
+        assert_eq!(
+            merged.document.as_deref(),
+            Some(std::path::Path::new("doc.md"))
+        );
+        assert_eq!(merged.max_errors, 10);
+        // Defaults applied.
+        assert_eq!(merged.schema_format, SchemaFormat::Json);
+        assert_eq!(merged.format, OutputFormat::Text);
     }
 }

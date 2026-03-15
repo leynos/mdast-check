@@ -33,6 +33,15 @@ fn strip_quotes(s: &str) -> &str {
         .unwrap_or(s)
 }
 
+/// Asserts that `stream` (raw bytes) contains `needle` as UTF-8 text.
+fn assert_stream_contains(stream: &[u8], stream_name: &str, needle: &str) {
+    let text = String::from_utf8_lossy(stream);
+    assert!(
+        text.contains(needle),
+        "expected {stream_name} to contain {needle:?}, got: {text}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Scenario state
 // ---------------------------------------------------------------------------
@@ -128,13 +137,7 @@ fn stderr_should_contain(cli_state: &CliState, expected: String) {
     let needle = strip_quotes(&expected);
     cli_state
         .output
-        .with_ref(|output| {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            assert!(
-                stderr.contains(needle),
-                "expected stderr to contain {needle:?}, got: {stderr}"
-            );
-        })
+        .with_ref(|output| assert_stream_contains(&output.stderr, "stderr", needle))
         .expect("output should be captured before asserting stderr");
 }
 
@@ -143,13 +146,7 @@ fn stdout_should_contain(cli_state: &CliState, expected: String) {
     let needle = strip_quotes(&expected);
     cli_state
         .output
-        .with_ref(|output| {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            assert!(
-                stdout.contains(needle),
-                "expected stdout to contain {needle:?}, got: {stdout}"
-            );
-        })
+        .with_ref(|output| assert_stream_contains(&output.stdout, "stdout", needle))
         .expect("output should be captured before asserting stdout");
 }
 

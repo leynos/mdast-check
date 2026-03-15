@@ -14,27 +14,27 @@ use std::process::ExitCode as StdExitCode;
 /// Returns an exit code indicating the result of validation.
 fn run_validate(args: &ValidateArgs) -> Result<ExitCode, MdastCheckError> {
     let merged_args = merge_validate_args(args)?;
-
-    let (document, schema) = validate_required_fields(&merged_args)?;
+    let paths = validate_required_fields(&merged_args)?;
 
     // TODO(#roadmap-1.2): Implement actual Markdown parsing and schema validation.
     // For this milestone, we only validate the command surface and configuration.
     // A successful invocation returns SUCCESS (0); actual validation occurs in 1.3.2.
-    if merged_args.quiet {
-        return Ok(ExitCode::SUCCESS);
-    }
 
-    // Non-quiet mode: print a brief status message.
-    #[expect(
-        clippy::print_stdout,
-        reason = "CLI status output is intentional; quiet mode available for scripting"
-    )]
-    {
-        println!(
-            "Validating {} against {}...",
-            document.display(),
-            schema.display()
-        );
+    // Output is suppressed in quiet mode, but validation logic (when implemented)
+    // will still run and return the appropriate exit code.
+    if !merged_args.quiet {
+        // Non-quiet mode: print a brief status message.
+        #[expect(
+            clippy::print_stdout,
+            reason = "CLI status output is intentional; quiet mode available for scripting"
+        )]
+        {
+            println!(
+                "Validating {} against {}...",
+                paths.document.display(),
+                paths.schema.display()
+            );
+        }
     }
 
     Ok(ExitCode::SUCCESS)
