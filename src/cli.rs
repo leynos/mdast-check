@@ -205,6 +205,7 @@ pub fn validate_required_fields(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn default_validate_args_has_expected_defaults() {
@@ -251,5 +252,73 @@ mod tests {
             validate_required_fields(&args).expect("should succeed when both fields are present");
         assert_eq!(doc, &PathBuf::from("doc.md"));
         assert_eq!(schema, &PathBuf::from("schema.json"));
+    }
+
+    /// Verifies that CLI values override defaults via `MergeComposer`.
+    #[rstest]
+    #[case::cli_overrides_document(
+        serde_json::json!({"document": "cli.md"}),
+        "cli.md",
+    )]
+    #[case::cli_overrides_schema(
+        serde_json::json!({"schema": "cli-schema.json"}),
+        "cli-schema.json",
+    )]
+    fn cli_layer_overrides_defaults(
+        #[case] cli_value: serde_json::Value,
+        #[case] expected_path: &str,
+    ) {
+        let defaults =
+            serde_json::to_value(ValidateArgs::default()).expect("should serialize defaults");
+        let mut composer = MergeComposer::new();
+        composer.push_defaults(defaults);
+        composer.push_cli(cli_value);
+
+        let merged = ValidateArgs::merge_from_layers(composer.layers())
+            .expect("should merge layers successfully");
+
+        // Check that the CLI-supplied value won.
+        let has_doc = merged
+            .document
+            .as_ref()
+            .is_some_and(|d| d.to_str() == Some(expected_path));
+        let has_schema = merged
+            .schema
+            .as_ref()
+            .is_some_and(|s| s.to_str() == Some(expected_path));
+
+        assert!(has_doc || has_schema, "CLI value should override defaults");
+    }
+
+    /// Verifies that defaults survive when no CLI override is provided.
+    #[test]
+    fn defaults_survive_without_cli_override() {
+        let defaults =
+            serde_json::to_value(ValidateArgs::default()).expect("should serialize defaults");
+        let mut composer = MergeComposer::new();
+        composer.push_defaults(defaults);
+        // Push an empty CLI layer — no overrides.
+        composer.push_cli(serde_json::json!({}));
+
+        let merged = ValidateArgs::merge_from_layers(composer.layers())
+            .expect("should merge layers successfully");
+
+        assert_eq!(merged.schema_format, Some(SchemaFormat::Json));
+        assert_eq!(merged.format, Some(OutputFormat::Text));
+        assert_eq!(merged.max_errors, Some(0));
+        assert!(!merged.fail_fast);
+        assert!(!merged.quiet);
+    }
+
+    /// Verifies that `merge_validate_args` produces defaults when called with
+    /// bare `ValidateArgs`.
+    #[test]
+    fn merge_validate_args_applies_defaults() {
+        let args = ValidateArgs::default();
+        let merged = merge_validate_args(&args).expect("should merge successfully");
+
+        assert_eq!(merged.schema_format, Some(SchemaFormat::Json));
+        assert_eq!(merged.format, Some(OutputFormat::Text));
+        assert_eq!(merged.max_errors, Some(0));
     }
 }
