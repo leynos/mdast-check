@@ -9,13 +9,13 @@ and keeps phases, steps, and tasks measurable.
 
 ### 1.1. Establish the command and configuration shell
 
-- [ ] 1.1.1. Implement the root CLI command with a `validate` subcommand.
+- [x] 1.1.1. Implement the root CLI command with a `validate` subcommand.
   See `mdast-schema-validation-cli-design.md` §User-facing contract.
-  - [ ] Parse `--document`, `--schema`, `--schema-format`, `--config`,
+  - [x] Parse `--document`, `--schema`, `--schema-format`, `--config`,
     `--format`, `--fail-fast`, `--max-errors`, and `--quiet`.
-  - [ ] Load configuration through `ortho-config` v0.8.0 with CLI overrides
+  - [x] Load configuration through `ortho-config` v0.8.0 with CLI overrides
     taking precedence over config file values.
-  - [ ] Return stable exit codes for success, validation failure, invalid
+  - [x] Return stable exit codes for success, validation failure, invalid
     invocation, schema failure, Markdown parse failure, and internal failure.
 - [ ] 1.1.2. Define the crate-local error taxonomy.
   See `mdast-schema-validation-cli-design.md` §Diagnostics design.
