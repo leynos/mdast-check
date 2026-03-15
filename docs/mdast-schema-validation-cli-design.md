@@ -95,16 +95,16 @@ the first release should keep the explicit verb for clarity.
 
 ### Proposed flags
 
-| Flag | Purpose |
-| --- | --- |
-| `--document <PATH>` | Path to the Markdown document. Use `-` to read from standard input. |
-| `--schema <PATH>` | Path to the JSON Schema document. |
+| Flag                       | Purpose                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| `--document <PATH>`        | Path to the Markdown document. Use `-` to read from standard input.                            |
+| `--schema <PATH>`          | Path to the JSON Schema document.                                                              |
 | `--schema-format <FORMAT>` | Force schema parsing mode. Supported values: `json` and `markdoc`. Defaults by file extension. |
-| `--config <PATH>` | Optional `ortho-config` file. |
-| `--format <OUTPUT>` | Diagnostic output format. Supported values: `human` and `json`. |
-| `--fail-fast` | Stop after the first validation failure that can be rendered. |
-| `--max-errors <N>` | Cap reported validation failures while keeping exit status non-zero. |
-| `--quiet` | Suppress success output. |
+| `--config <PATH>`          | Optional `ortho-config` file.                                                                  |
+| `--format <OUTPUT>`        | Diagnostic output format. Supported values: `human` and `json`.                                |
+| `--fail-fast`              | Stop after the first validation failure that can be rendered.                                  |
+| `--max-errors <N>`         | Cap reported validation failures while keeping exit status non-zero.                           |
+| `--quiet`                  | Suppress success output.                                                                       |
 
 _Table 1: Proposed initial `mdast-check` CLI flags._
 
@@ -429,9 +429,8 @@ files. These tests should cover scenarios such as:
 - validating Markdoc-native schemata in experimental mode.
 
 Feature layout, fixture wiring, and step-definition behaviour should follow the
-documented `rstest-bdd` patterns for feature files, `#[scenario]` bindings,
-and fixture injection. See
-[`rstest-bdd` user's guide](./rstest-bdd-users-guide.md).
+documented `rstest-bdd` patterns for feature files, `#[scenario]` bindings, and
+fixture injection. See [`rstest-bdd` user's guide](./rstest-bdd-users-guide.md).
 
 ### Snapshot tests
 
@@ -501,3 +500,54 @@ The recommended implementation order is:
 This order keeps the highest-risk technical seam, source-aware diagnostic
 mapping, visible early while preventing the Markdoc stretch goal from blocking
 the baseline deliverable.
+
+## Implementation notes (milestone 1.1.1)
+
+The following decisions were taken during the implementation of roadmap item
+1.1.1 (CLI and configuration shell).
+
+### Module layout
+
+The initial deliverable creates three source files:
+
+- `src/lib.rs` — crate root declaring `pub mod cli` and `pub mod error`.
+- `src/cli.rs` — `ValidateArgs` struct with `#[derive(OrthoConfig)]`, `Cli`
+  parser, `Commands` enum, `merge_validate_args()`, and
+  `validate_required_fields()`.
+- `src/error.rs` — `ExitCode` newtype, `MdastCheckError` enum with five
+  variants, and `ExitCode::from_error()` mapping.
+
+The `document`, `schema`, `mdast_model`, `validate`, and `diagnostics` modules
+from the design are deferred to later milestones.
+
+### Deviations from the proposed flag set
+
+- `--schema-format` supports `json` (default) and `custom` rather than `json`
+  and `markdoc`. The `markdoc` value is deferred until the Markdoc schema
+  compilation feature is implemented.
+- `--format` supports `text` (default) and `json` rather than `human` and
+  `json`. The `text` name was chosen for consistency with common CLI
+  conventions.
+- `--quiet` and `--fail-fast` are boolean flags (present or absent) rather than
+  value-taking flags. This matches standard CLI ergonomics; users write
+  `--quiet` instead of `--quiet true`.
+
+### Configuration layering
+
+`ortho-config` v0.8.0 is used with its `MergeComposer` for declarative layer
+merging. The current implementation layers defaults and CLI arguments only.
+File-based and environment-variable layers are stubbed for future milestones.
+
+### Stub behaviour
+
+A well-formed invocation returns exit code `0` without performing actual
+Markdown parsing or schema validation. This stub will be replaced when
+milestones 1.2 and 1.3 are implemented.
+
+### Error handling
+
+`color-eyre` is installed at the application boundary in `main()` for enhanced
+error output. Domain errors flow through the `MdastCheckError` enum (derived
+via `thiserror`) and are mapped to exit codes via `ExitCode::from_error()`.
+Production code never calls `.unwrap()` or `.expect()`; all fallible operations
+return `Result` and propagate with `?`.
