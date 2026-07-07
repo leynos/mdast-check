@@ -41,11 +41,11 @@ wrappers normalize results into `StepExecution`.
 
 ## The three amigos
 
-| Role ("amigo") | Primary concerns | Features provided by `rstest‑bdd` |
-| --- | --- | --- |
-| **Business analyst/product owner** | Writing and reviewing business-readable specifications; ensuring that acceptance criteria are expressed clearly. | Gherkin `.feature` files are plain text and start with a `Feature` declaration; each `Scenario` describes a single behaviour. Steps are written using keywords `Given`, `When`, and `Then` ([syntax](https://cucumber.io/docs/gherkin/reference/)), producing living documentation for teams. |
-| **Developer** | Implementing step definitions in Rust and wiring them to the business specifications; using existing fixtures for setup/teardown. | Attribute macros `#[given]`, `#[when]` and `#[then]` register step functions and their pattern strings in a global step registry. A `#[scenario]` macro reads a feature file at compile time and generates a test that drives the registered steps. Fixtures whose parameter names match are injected automatically; use `#[from(name)]` only when a parameter name differs from the fixture. |
-| **Tester/QA** | Executing behaviour tests, ensuring correct sequencing of steps and verifying outcomes observable by the user. | Scenarios are executed via the standard `cargo test` runner; test functions annotated with `#[scenario]` run each step in order and panic if a step is missing. Assertions belong in `Then` steps; guidelines discourage inspecting internal state and encourage verifying observable outcomes. Testers can use `cargo test` filters and parallelism because the generated tests are ordinary Rust tests. |
+| Role ("amigo")                     | Primary concerns                                                                                                                  | Features provided by `rstest‑bdd`                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Business analyst/product owner** | Writing and reviewing business-readable specifications; ensuring that acceptance criteria are expressed clearly.                  | Gherkin `.feature` files are plain text and start with a `Feature` declaration; each `Scenario` describes a single behaviour. Steps are written using keywords `Given`, `When`, and `Then` ([syntax](https://cucumber.io/docs/gherkin/reference/)), producing living documentation for teams.                                                                                                             |
+| **Developer**                      | Implementing step definitions in Rust and wiring them to the business specifications; using existing fixtures for setup/teardown. | Attribute macros `#[given]`, `#[when]` and `#[then]` register step functions and their pattern strings in a global step registry. A `#[scenario]` macro reads a feature file at compile time and generates a test that drives the registered steps. Fixtures whose parameter names match are injected automatically; use `#[from(name)]` only when a parameter name differs from the fixture.             |
+| **Tester/QA**                      | Executing behaviour tests, ensuring correct sequencing of steps and verifying outcomes observable by the user.                    | Scenarios are executed via the standard `cargo test` runner; test functions annotated with `#[scenario]` run each step in order and panic if a step is missing. Assertions belong in `Then` steps; guidelines discourage inspecting internal state and encourage verifying observable outcomes. Testers can use `cargo test` filters and parallelism because the generated tests are ordinary Rust tests. |
 
 The following sections expand on these responsibilities and show how to use the
 current API effectively.
@@ -1028,9 +1028,9 @@ that a step or scenario stopped executing. Use
 outcome, optionally constraining its message, and
 `rstest_bdd::assert_scenario_skipped!` to inspect
 [`ScenarioStatus`](https://docs.rs/rstest-bdd/latest/rstest_bdd/reporting/enum.ScenarioStatus.html)
-records. Both macros
-accept `message_absent = true` to assert that no message was provided and
-substring matching to confirm that a message contains the expected reason.
+ records. Both macros accept `message_absent = true` to assert that no message
+was provided and substring matching to confirm that a message contains the
+expected reason.
 
 ```rust,no_run
 use rstest_bdd::{assert_scenario_skipped, assert_step_skipped, StepExecution};
@@ -1747,7 +1747,8 @@ assert!(err
     .contains("unrecognised boolean value 'maybe'"));
 ```
 
-[`DataTableError`]: https://docs.rs/rstest-bdd/latest/rstest_bdd/datatable/enum.DataTableError.html
+[`DataTableError`]:
+https://docs.rs/rstest-bdd/latest/rstest_bdd/datatable/enum.DataTableError.html
 
 A Gherkin Docstring is available through an argument named `docstring` of type
 `String`. Both arguments must use these exact names and types to be detected by
