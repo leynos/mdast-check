@@ -475,7 +475,7 @@ support predictable debugging:
 - optional `--format json` output for editor or CI tooling,
 - snapshot-friendly deterministic ordering of reported errors,
 - no colour or terminal-width dependency in snapshot tests unless explicitly
-  normalised.
+  normalized.
 
 ## Risks and mitigations
 
