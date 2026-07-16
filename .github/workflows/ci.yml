@@ -58,11 +58,14 @@ jobs:
           format: lcov
           use-cargo-nextest: 'false'
           with-ratchet: 'true'
-      # The CodeScene "Code Coverage" changed-line gate (`mode: check`)
-      # is deferred here: CodeScene rejects `cs-coverage check` on
-      # projects whose configuration lacks a gates section, which is
-      # every project in the estate bar one as of 2026-07. Main-branch
-      # coverage is uploaded instead by coverage-main.yml, which also
-      # writes the ratchet baseline this job compares against. Add the
-      # `mode: check` step here once CodeScene enables the gate for
-      # this project (see ddlint#287 for the reference pattern).
+      - name: Check coverage against CodeScene gates
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
+        if: env.CS_ACCESS_TOKEN != '' && github.event_name == 'pull_request'
+        uses: leynos/shared-actions/.github/actions/upload-codescene-coverage@29eea2635ee0f92e42c05f4cd360b7f1a2f00b12
+        with:
+          format: lcov
+          mode: check
+          project-url: https://api.codescene.io/v2/projects/77668
+          access-token: ${{ env.CS_ACCESS_TOKEN }}
+          installer-checksum: ${{ vars.CODESCENE_CLI_SHA256 }}
