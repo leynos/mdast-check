@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Rust
-        uses: leynos/shared-actions/.github/actions/setup-rust@29eea2635ee0f92e42c05f4cd360b7f1a2f00b12
+        uses: leynos/shared-actions/.github/actions/setup-rust@9f788dad94c848e3bbddfb90f9e80b6742b7390c
       - name: Format
         run: make check-fmt
       - name: Spelling
