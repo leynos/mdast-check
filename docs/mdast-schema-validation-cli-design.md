@@ -95,16 +95,16 @@ the first release should keep the explicit verb for clarity.
 
 ### Proposed flags
 
-| Flag | Purpose |
-| --- | --- |
-| `--document <PATH>` | Path to the Markdown document. Use `-` to read from standard input. |
-| `--schema <PATH>` | Path to the JSON Schema document. |
+| Flag                       | Purpose                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| `--document <PATH>`        | Path to the Markdown document. Use `-` to read from standard input.                            |
+| `--schema <PATH>`          | Path to the JSON Schema document.                                                              |
 | `--schema-format <FORMAT>` | Force schema parsing mode. Supported values: `json` and `markdoc`. Defaults by file extension. |
-| `--config <PATH>` | Optional `ortho-config` file. |
-| `--format <OUTPUT>` | Diagnostic output format. Supported values: `human` and `json`. |
-| `--fail-fast` | Stop after the first validation failure that can be rendered. |
-| `--max-errors <N>` | Cap reported validation failures while keeping exit status non-zero. |
-| `--quiet` | Suppress success output. |
+| `--config <PATH>`          | Optional `ortho-config` file.                                                                  |
+| `--format <OUTPUT>`        | Diagnostic output format. Supported values: `human` and `json`.                                |
+| `--fail-fast`              | Stop after the first validation failure that can be rendered.                                  |
+| `--max-errors <N>`         | Cap reported validation failures while keeping exit status non-zero.                           |
+| `--quiet`                  | Suppress success output.                                                                       |
 
 _Table 1: Proposed initial `mdast-check` CLI flags._
 
@@ -429,9 +429,8 @@ files. These tests should cover scenarios such as:
 - validating Markdoc-native schemata in experimental mode.
 
 Feature layout, fixture wiring, and step-definition behaviour should follow the
-documented `rstest-bdd` patterns for feature files, `#[scenario]` bindings,
-and fixture injection. See
-[`rstest-bdd` user's guide](./rstest-bdd-users-guide.md).
+documented `rstest-bdd` patterns for feature files, `#[scenario]` bindings, and
+fixture injection. See [`rstest-bdd` user's guide](./rstest-bdd-users-guide.md).
 
 ### Snapshot tests
 

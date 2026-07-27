@@ -41,11 +41,11 @@ wrappers normalize results into `StepExecution`.
 
 ## The three amigos
 
-| Role ("amigo") | Primary concerns | Features provided by `rstest‑bdd` |
-| --- | --- | --- |
-| **Business analyst/product owner** | Writing and reviewing business-readable specifications; ensuring that acceptance criteria are expressed clearly. | Gherkin `.feature` files are plain text and start with a `Feature` declaration; each `Scenario` describes a single behaviour. Steps are written using keywords `Given`, `When`, and `Then` ([syntax](https://cucumber.io/docs/gherkin/reference/)), producing living documentation for teams. |
-| **Developer** | Implementing step definitions in Rust and wiring them to the business specifications; using existing fixtures for setup/teardown. | Attribute macros `#[given]`, `#[when]` and `#[then]` register step functions and their pattern strings in a global step registry. A `#[scenario]` macro reads a feature file at compile time and generates a test that drives the registered steps. Fixtures whose parameter names match are injected automatically; use `#[from(name)]` only when a parameter name differs from the fixture. |
-| **Tester/QA** | Executing behaviour tests, ensuring correct sequencing of steps and verifying outcomes observable by the user. | Scenarios are executed via the standard `cargo test` runner; test functions annotated with `#[scenario]` run each step in order and panic if a step is missing. Assertions belong in `Then` steps; guidelines discourage inspecting internal state and encourage verifying observable outcomes. Testers can use `cargo test` filters and parallelism because the generated tests are ordinary Rust tests. |
+| Role ("amigo")                     | Primary concerns                                                                                                                  | Features provided by `rstest‑bdd`                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Business analyst/product owner** | Writing and reviewing business-readable specifications; ensuring that acceptance criteria are expressed clearly.                  | Gherkin `.feature` files are plain text and start with a `Feature` declaration; each `Scenario` describes a single behaviour. Steps are written using keywords `Given`, `When`, and `Then` ([syntax](https://cucumber.io/docs/gherkin/reference/)), producing living documentation for teams.                                                                                                             |
+| **Developer**                      | Implementing step definitions in Rust and wiring them to the business specifications; using existing fixtures for setup/teardown. | Attribute macros `#[given]`, `#[when]` and `#[then]` register step functions and their pattern strings in a global step registry. A `#[scenario]` macro reads a feature file at compile time and generates a test that drives the registered steps. Fixtures whose parameter names match are injected automatically; use `#[from(name)]` only when a parameter name differs from the fixture.             |
+| **Tester/QA**                      | Executing behaviour tests, ensuring correct sequencing of steps and verifying outcomes observable by the user.                    | Scenarios are executed via the standard `cargo test` runner; test functions annotated with `#[scenario]` run each step in order and panic if a step is missing. Assertions belong in `Then` steps; guidelines discourage inspecting internal state and encourage verifying observable outcomes. Testers can use `cargo test` filters and parallelism because the generated tests are ordinary Rust tests. |
 
 The following sections expand on these responsibilities and show how to use the
 current API effectively.
@@ -856,8 +856,8 @@ prefer explicit `.await`-based coordination when completion is required.
 > `async fn`), two approaches are available without a harness:
 >
 > - **`#[scenario]`** with an explicit `#[tokio::test(flavor =
->   "current_thread")]` attribute — see [Using `#[scenario]` with
->   async](#using-scenario-with-async).
+>   "current_thread")]` attribute — see [Using `#[scenario]
+>   ` with async](#using-scenario-with-async).
 > - **`scenarios!`** with `runtime = "tokio-current-thread"` for
 >   auto-discovery — see [Using `scenarios!` with
 >   async](#using-scenarios-with-async).
@@ -967,11 +967,11 @@ one may filter or run them in parallel as usual.
 
 Steps or hooks may call `rstest_bdd::skip!` to stop executing the remaining
 steps. The macro records a `Skipped` outcome and short-circuits the scenario so
-the generated test returns before evaluating the annotated function body.
-Invoke `skip!()` with no arguments to record a skipped outcome without a
-message. Pass an optional string to describe the reason, and use the standard
-`format!` syntax to interpolate values when needed. Set the
-`RSTEST_BDD_FAIL_ON_SKIPPED` environment variable to `1`, or call
+the generated test returns before evaluating the annotated function body. Invoke
+`skip!()` with no arguments to record a skipped outcome without a message.
+Pass an optional string to describe the reason, and use the standard `format!`
+syntax to interpolate values when needed. Set the `RSTEST_BDD_FAIL_ON_SKIPPED`
+environment variable to `1`, or call
 `rstest_bdd::config::set_fail_on_skipped(true)`, to escalate skipped scenarios
 into test failures unless the feature or scenario carries an `@allow_skipped`
 tag. (Example-level tags are not yet evaluated.)
@@ -981,7 +981,7 @@ may freely call `skip!` as long as they eventually run within a step or hook.
 When code outside that context—for example, a unit test or module
 initialization routine—invokes the macro, it panics with the message
 `rstest_bdd::skip! may only be used inside a step or hook generated by rstest-bdd`.
- Each scope tracks the thread that entered it; issuing a skip from another
+Each scope tracks the thread that entered it; issuing a skip from another
 thread panics with
 `rstest_bdd::skip! may only run on the thread executing the step ...`. Keep
 skip requests on the thread that executes steps, so the runner can intercept
@@ -1028,9 +1028,9 @@ that a step or scenario stopped executing. Use
 outcome, optionally constraining its message, and
 `rstest_bdd::assert_scenario_skipped!` to inspect
 [`ScenarioStatus`](https://docs.rs/rstest-bdd/latest/rstest_bdd/reporting/enum.ScenarioStatus.html)
-records. Both macros
-accept `message_absent = true` to assert that no message was provided and
-substring matching to confirm that a message contains the expected reason.
+records. Both macros accept `message_absent = true` to assert that no message
+was provided and substring matching to confirm that a message contains the
+expected reason.
 
 ```rust,no_run
 use rstest_bdd::{assert_scenario_skipped, assert_step_skipped, StepExecution};
@@ -1360,9 +1360,8 @@ fn async_wrapper_with_aliases<'ctx>(
 ### Current limitations
 
 - **Tokio current-thread mode only:** Multi-threaded Tokio mode would require
-  `Send` futures, which conflicts with the `RefCell`-backed fixture storage.
-  See [ADR-001](adr-001-async-fixtures-and-test.md) for the full design
-  rationale.
+  `Send` futures, which conflicts with the `RefCell`-backed fixture storage. See
+  [ADR-001](adr-001-async-fixtures-and-test.md) for the full design rationale.
 - **Nested runtime safeguards:** Async-only steps running in synchronous
   scenarios use a per-step runtime fallback, which refuses to run when a Tokio
   runtime is already active on the current thread.
@@ -1497,25 +1496,24 @@ Best practices for writing effective scenarios include:
   (for example, `1e3`, `-1E-9`), and the special values `NaN`, `inf`, and
   `Infinity` (matched case-insensitively). Matching is anchored: the entire
   step text must match the pattern; partial matches do not succeed. Escape
-  literal braces with `{{` and `}}`. Use
-  `\` to match a single backslash. A trailing `\` or any other backslash escape
-  is treated literally, so `\d` matches the two-character sequence `\d`. Nested
-  braces inside placeholders are not supported. Braces are not allowed inside
-  type hints. Placeholders use `{name}` or `{name:type}`; the type hint must
-  not contain braces (for example, `{n:{u32}}` and `{n:Vec<{u32}>}` are
-  rejected). To describe braces in the surrounding step text (for example,
-  referring to `{u32}`), escape them as `{{` and `}}` rather than placing them
-  inside `{name:type}`. The lexer closes the placeholder at the first `}` after
-  the optional type hint; any characters between the `:type` and that first `}`
-  are ignored (for example, `{n:u32 extra}` parses as `name = n`,
-  `type = u32`). `name` must start with a letter or underscore and may contain
-  letters, digits, or underscores (`[A-Za-z_][A-Za-z0-9_]*`). Whitespace within
-  the type hint is ignored (for example, `{count: u32}` and `{count:u32}` are
-  both accepted), but whitespace is not allowed between the name and the colon.
-  Prefer the compact form `{count:u32}` in new code. When a pattern contains no
-  placeholders, the step text must match exactly. Unknown type hints are
-  treated as generic placeholders and capture any non-newline text using a
-  non-greedy match.
+  literal braces with `{{` and `}}`. Use `\` to match a single backslash. A
+  trailing `\` or any other backslash escape is treated literally, so `\d`
+  matches the two-character sequence `\d`. Nested braces inside placeholders
+  are not supported. Braces are not allowed inside type hints. Placeholders use
+  `{name}` or `{name:type}`; the type hint must not contain braces (for example,
+  `{n:{u32}}` and `{n:Vec<{u32}>}` are rejected). To describe braces in the
+  surrounding step text (for example, referring to `{u32}`), escape them as
+  `{{` and `}}` rather than placing them inside `{name:type}`. The lexer closes
+  the placeholder at the first `}` after the optional type hint; any characters
+  between the `:type` and that first `}` are ignored (for example,
+  `{n:u32 extra}` parses as `name = n`, `type = u32`). `name` must start with a
+  letter or underscore and may contain letters, digits, or underscores
+  (`[A-Za-z_][A-Za-z0-9_]*`). Whitespace within the type hint is ignored (for
+  example, `{count: u32}` and `{count:u32}` are both accepted), but whitespace
+  is not allowed between the name and the colon. Prefer the compact form
+  `{count:u32}` in new code. When a pattern contains no placeholders, the step
+  text must match exactly. Unknown type hints are treated as generic
+  placeholders and capture any non-newline text using a non-greedy match.
 
 ## Data tables and doc strings
 
@@ -1956,9 +1954,8 @@ rstest_bdd::reporting::json::write_snapshot(&mut buffer)?;
 ```
 
 The companion `rstest_bdd::reporting::junit` module renders the same snapshot
-as JUnit XML. Each skipped scenario emits a `<skipped>` element with an
-optional `message` attribute so continuous integration (CI) servers surface the
-reason:
+as JUnit XML. Each skipped scenario emits a `<skipped>` element with an optional
+`message` attribute so continuous integration (CI) servers surface the reason:
 
 ```rust,no_run
 let mut xml = String::new();
@@ -2029,7 +2026,7 @@ paths or during headless or scripted testing scenarios.
 Add a configuration in the `settings.json` file or use an extension that allows
 custom LSP servers. A minimal example using the
 [LSP-client](https://marketplace.visualstudio.com/items?itemName=ACharLuk.easy-lsp-client)
- extension:
+extension:
 
 ```json
 {
@@ -2146,8 +2143,8 @@ implement it.
 
 **Usage:**
 
-1. Place the cursor on a step line in a `.feature` file (e.g., `Given a user
-   exists`).
+1. Place the cursor on a step line in a `.feature` file (e.g.,
+   `Given a user exists`).
 2. Invoke "Go to Implementation" (typically Ctrl+F12 or a similar keybinding in
    most editors).
 3. The editor navigates to all matching Rust step functions.
