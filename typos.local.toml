@@ -6,14 +6,15 @@ schema = 1
 stems = []
 
 [words]
-# Official names and API spelling: Azure Architecture Center, GitHub Flavored
-# Markdown, and tokio::test's `flavor` argument.
-accepted = ["Center", "Flavored", "flavor"]
+# API spelling: tokio::test's `flavor` argument.
+accepted = ["flavor"]
 
 [words.corrections]
 
 [patterns]
-ignore = []
+# Inline code spans were masked by the previous dictionary snapshot; kept until
+# the shared dictionary rules on it.
+ignore = ['`[^`\n]+`']
 
 [files]
 exclude = []
