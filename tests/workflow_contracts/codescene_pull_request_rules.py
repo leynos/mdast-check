@@ -136,7 +136,16 @@ def _watched(name: str, document: Document) -> set[str]:
     """Return the workflow names one workflow's `workflow_run` trigger watches."""
     run = triggers(name, document).get("workflow_run")
     watched = run.get("workflows", []) if isinstance(run, dict) else []
-    return set(map(str, typ.cast("list[object]", watched)))
+    # A scalar is one name; iterating it would yield its characters, and the
+    # chained workflow would silently leave the closure.
+    match watched:
+        case str():
+            return {watched}
+        case list() if all(isinstance(item, str) for item in watched):
+            return set(typ.cast("list[str]", watched))
+        case _:
+            message = f"{name}: cannot read workflow_run workflows {watched!r}"
+            raise WorkflowError(message)
 
 
 def _chained(found: set[str], documents: dict[str, Document]) -> set[str]:
@@ -169,7 +178,8 @@ def closure(seeds: set[str], documents: dict[str, Document]) -> dict[str, Docume
     Raises
     ------
     WorkflowError
-        If a local call cannot be followed; see `local_callee`.
+        If a local call cannot be followed (see `local_callee`), or a
+        `workflow_run` trigger names its workflows in an unreadable shape.
 
     """
     found = set(seeds)

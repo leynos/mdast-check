@@ -86,6 +86,27 @@ def test_closure_follows_a_workflow_run_chain(documents: Documents) -> None:
     _assert_contact(documents, f"{PROBE} names the CodeScene host")
 
 
+def test_closure_follows_a_scalar_workflow_run_name(documents: Documents) -> None:
+    """A single watched name may be a scalar; it must not split into letters."""
+    _, callee = _probe()
+    lane = str(documents[LANE].get("name", LANE))
+    callee[True] = {"workflow_run": {"workflows": lane}}
+    documents[PROBE] = callee
+    _assert_contact(documents, f"{PROBE} names the CodeScene host")
+
+
+@pytest.mark.parametrize("watched", [{"name": "CI"}, ["CI", 7]])
+def test_workflow_run_refuses_unreadable_names(
+    documents: Documents, watched: object
+) -> None:
+    """A watched-workflow value the closure cannot read is refused, not skipped."""
+    _, callee = _probe()
+    callee[True] = {"workflow_run": {"workflows": watched}}
+    documents[PROBE] = callee
+    with pytest.raises(WorkflowError, match="cannot read workflow_run workflows"):
+        pull_request_closure(documents)
+
+
 def test_workflow_run_matches_an_unnamed_workflow_by_path(
     documents: Documents,
 ) -> None:
