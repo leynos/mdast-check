@@ -23,8 +23,16 @@ NIXIE ?= nixie
 WHITAKER ?= whitaker
 UV ?= uv
 UV_ENV = UV_CACHE_DIR=.uv-cache UV_TOOL_DIR=.uv-tools
+
+# The CV-005 CodeScene contracts live in shared-actions and run from a full
+# commit, so a fix is a pin bump. `.github/cv005.toml` holds this repository's
+# only parameters.
+CV005_CONTRACTS_REF ?= a38feb9be25755c30eca5bda96bd3786a5b89c6b
+CV005_CONTRACTS = $(UV_ENV) $(UV) tool run --python 3.13 \
+	--from 'git+https://github.com/leynos/shared-actions@$(CV005_CONTRACTS_REF)\#subdirectory=packages/cv005-contracts' \
+	cv005-contracts
+
 RUFF_VERSION ?= 0.15.12
-WORKFLOW_CONTRACTS = tests/workflow_contracts
 TYPOS_CONFIG_BUILDER_VERSION ?= v0.1.1
 TYPOS_CONFIG_BUILDER = $(UV_ENV) $(UV) tool run --from \
 	"git+https://github.com/leynos/typos-config-builder.git@$(TYPOS_CONFIG_BUILDER_VERSION)" \
@@ -42,7 +50,7 @@ STANDARD_RUSTFLAGS := -Zthreads=8$(if $(filter Linux,$(BUILD_HOST_OS)), -Clink-a
 build: target/debug/$(TARGET) ## Build debug binary
 release: target/release/$(TARGET) ## Build release binary
 
-all: check-fmt lint test spelling ## Perform a comprehensive check of code and prose
+all: check-fmt lint test spelling workflow-contracts ## Perform a comprehensive check of code and prose
 
 clean: ## Remove build artifacts
 	$(CARGO) clean
@@ -74,14 +82,7 @@ spelling: ## Enforce en-GB-oxendict spelling
 	$(TYPOS_CONFIG_BUILDER) gate --repository .
 
 workflow-contracts: ## Check the CV-005 CodeScene workflow contract
-	$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) format --isolated \
-		--target-version py313 --check $(WORKFLOW_CONTRACTS)
-	$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) check --isolated \
-		--target-version py313 $(WORKFLOW_CONTRACTS)
-	PYTHONDONTWRITEBYTECODE=1 $(UV_ENV) $(UV) run --no-project --python 3.13 \
-		--with pytest==9.0.2 --with pyyaml==6.0.3 \
-		python -m pytest $(WORKFLOW_CONTRACTS) \
-		-c /dev/null --rootdir=. -p no:cacheprovider
+	$(CV005_CONTRACTS) check --repository .
 
 nixie: ## Validate Mermaid diagrams
 	$(NIXIE) --no-sandbox
