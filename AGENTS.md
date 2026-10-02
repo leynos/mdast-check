@@ -250,11 +250,7 @@ project:
 
 ## Markdown Guidance
 
-- Validate Markdown files using `make markdownlint`. This target also enforces
-  en-GB-oxendict spelling.
-- Quoted APIs and identifiers retain upstream spelling. Put them in backticks
-  or fenced code blocks, which the spelling gate ignores, rather than adding
-  word-level exceptions.
+- Validate Markdown files using `make markdownlint`.
 - Run `make fmt` after any documentation changes to format all Markdown
   files and fix table markup.
 - Validate Mermaid diagrams in Markdown files by running `make nixie`.
