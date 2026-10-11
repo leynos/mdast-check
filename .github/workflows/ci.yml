@@ -41,6 +41,8 @@ jobs:
           globs: '**/*.md'
       - name: Install the Whitaker Dylint suite
         uses: leynos/shared-actions/.github/actions/install-whitaker@cabf105ae230e3759cf77b1c2d1d73ea0b67e9a9
+      - name: Install the YAML lint tools
+        uses: leynos/shared-actions/.github/actions/install-yaml-lint@26c918632c5413039a84358fafe012a4399a9ec7
       - name: Lint
         run: make lint
       # Coverage here serves the local ratchet and nothing else: the report is
