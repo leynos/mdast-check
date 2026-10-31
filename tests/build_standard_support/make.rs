@@ -296,7 +296,7 @@ pub fn development_problems(
         problems.extend(
             commands
                 .iter()
-                .filter_map(|(text, command)| command_problem(target, host, pin, text, command)),
+                .filter_map(|command| command_problem(target, host, pin, command)),
         );
         problems.extend(test_policy_problems(target, host, &commands));
     }
