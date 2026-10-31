@@ -8,45 +8,57 @@ use super::{
     whitaker::whitaker_route_problems,
 };
 
-/// Renders a `lint` recipe: a compliant Clippy command beside the given Whitaker command line.
-fn lint_with(host: Host, whitaker: &str) -> Result<String, String> {
+/// Renders a recipe: for `lint`, a compliant Clippy command beside the given Whitaker command line; for
+/// every other target, a compliant `cargo test`.
+fn lint_with(target: Target<'_>, host: Host, whitaker: &str) -> Result<String, String> {
     let linker = linker_flag(host);
-    canned(format_args!(
-        "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo clippy --all-targets\n{whitaker}\n"
-    ))
+    let compliant =
+        format!("RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\"");
+    if target.name() == "lint" {
+        canned(format_args!(
+            "{compliant} cargo clippy --all-targets\n{whitaker}\n"
+        ))
+    } else {
+        canned(format_args!("{compliant} cargo test\n"))
+    }
 }
 
 /// A fake runner whose Whitaker command is isolated: it assigns only the warning policy.
-fn isolated_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
-    lint_with(host, "RUSTFLAGS=\"-D warnings\" whitaker --all")
+fn isolated_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(target, host, "RUSTFLAGS=\"-D warnings\" whitaker --all")
 }
 
 /// A fake runner whose Whitaker command carries the development flags.
-fn contaminated_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
+fn contaminated_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
     let flags = format!("-D warnings {THREADS_FLAG}{}", linker_flag(host));
-    lint_with(host, &format!("RUSTFLAGS=\"{flags}\" whitaker --all"))
+    lint_with(
+        target,
+        host,
+        &format!("RUSTFLAGS=\"{flags}\" whitaker --all"),
+    )
 }
 
 /// A fake runner whose Whitaker command inherits the caller's `RUSTFLAGS`.
-fn inheriting_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
+fn inheriting_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
     lint_with(
+        target,
         host,
         "RUSTFLAGS=\"${RUSTFLAGS:+$RUSTFLAGS }-D warnings\" whitaker --all",
     )
 }
 
 /// A fake runner whose Whitaker command assigns an empty `RUSTFLAGS`, dropping the warning policy.
-fn empty_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
-    lint_with(host, "RUSTFLAGS=\"\" whitaker --all")
+fn empty_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(target, host, "RUSTFLAGS=\"\" whitaker --all")
 }
 
 /// A fake runner whose Whitaker command assigns nothing.
-fn bare_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
-    lint_with(host, "whitaker --all")
+fn bare_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(target, host, "whitaker --all")
 }
 
 /// A fake runner whose `lint` recipe runs no Whitaker command at all.
-fn no_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
+fn no_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
     let linker = linker_flag(host);
     canned(format_args!(
         "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo clippy --all-targets\n"
@@ -54,7 +66,7 @@ fn no_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
 }
 
 /// A fake runner whose Cargo test filter names Whitaker, beside a compliant Whitaker command.
-fn whitaker_test_filter_make(_target: Target<'_>, host: Host) -> Result<String, String> {
+fn whitaker_test_filter_make(target: Target<'_>, host: Host) -> Result<String, String> {
     let linker = linker_flag(host);
     canned(format_args!(
         "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo test whitaker\nRUSTFLAGS=\"-D warnings\" whitaker --all\n"
