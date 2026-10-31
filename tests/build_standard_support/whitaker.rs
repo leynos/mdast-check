@@ -69,9 +69,9 @@ pub fn command_problem(
     target: &str,
     host: Host,
     pin: Pin,
-    text: &str,
-    assignment: &Assignment,
+    command: &(String, Assignment),
 ) -> Option<String> {
+    let (text, assignment) = command;
     match assignment {
         Assignment::Flags(flags, inherits) if runs_whitaker(text) => {
             isolated_problem(target, host, flags, *inherits)
