@@ -58,7 +58,7 @@ fn bare_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> 
 }
 
 /// A fake runner whose `lint` recipe runs no Whitaker command at all.
-fn no_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+fn no_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
     let linker = linker_flag(host);
     canned(format_args!(
         "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo clippy --all-targets\n"
@@ -66,7 +66,7 @@ fn no_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
 }
 
 /// A fake runner whose Cargo test filter names Whitaker, beside a compliant Whitaker command.
-fn whitaker_test_filter_make(target: Target<'_>, host: Host) -> Result<String, String> {
+fn whitaker_test_filter_make(_target: Target<'_>, host: Host) -> Result<String, String> {
     let linker = linker_flag(host);
     canned(format_args!(
         "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo test whitaker\nRUSTFLAGS=\"-D warnings\" whitaker --all\n"
