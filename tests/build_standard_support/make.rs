@@ -5,6 +5,7 @@
 use super::{
     config::{Flags, LINKER_FLAG, Pin, Problems, THREADS_FLAG},
     shell::{compiles, shell_commands, without_leading_keywords},
+    whitaker::command_problem,
 };
 
 /// Makefile targets that build for development. A command in one either assigns
@@ -165,7 +166,7 @@ impl<'a> Target<'a> {
 pub type MakeRunner = fn(Target<'_>, Host) -> Result<String, String>;
 
 /// Reads the commands a runner reports for a target on a host, with their text.
-fn make_commands(
+pub(super) fn make_commands(
     runner: MakeRunner,
     target: &str,
     host: Host,
@@ -295,7 +296,7 @@ pub fn development_problems(
         problems.extend(
             commands
                 .iter()
-                .filter_map(|(_, command)| development_problem(target, host, pin, command)),
+                .filter_map(|(text, command)| command_problem(target, host, pin, text, command)),
         );
         problems.extend(test_policy_problems(target, host, &commands));
     }
