@@ -107,7 +107,7 @@ Exception: Cranelift is not the development-profile backend, because the
 repository has no test suite to measure it with. The estate adopts the backend
 only where the full suite passes under it, and a build alone proves nothing
 about miscompilation or unwinding (recorded 2026-09-29, on the pinned
-`nightly-2026-03-05`). The pin is now `nightly-2026-10-30`; the repository
+`nightly-2026-03-05`). The pin has since moved; the repository
 still has no test suite, so no measurement was taken on it and the exception
 stands without a deferral date. Revisit when the repository has tests: measure
 the whole suite under the backend and adopt it if every test passes.
@@ -127,7 +127,4 @@ run with `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
 flags are used, and the pin is not moved to suit the key. Whoever moves the pin
 across a boundary of the rule must switch the key to match the new pin family.
 Stable Cargo, which builds the release, ignores the `[unstable]` table.
-`tests/footprint_contract.rs` asks Cargo itself (`--unit-graph` and
-`config get`, which compile nothing) for the effective profiles and the key, so
-an override in any configuration file Cargo merges is caught as well as the
-manifest's own table.
+The concordat rule `rust-dev-build-footprint` checks all three settings.
