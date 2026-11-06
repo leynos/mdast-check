@@ -57,7 +57,31 @@ fn command_words(command: &str) -> Vec<&str> {
         .step_by(2)
         .flat_map(str::split_whitespace)
         .skip_while(|word| is_assignment(word))
+        .collect::<Vec<_>>()
+        .into_iter()
+        .skip_while(skip_env())
         .collect()
+}
+
+/// Skips an `env` wrapper: the word itself, its `-u NAME` removals and its own assignments.
+fn skip_env() -> impl FnMut(&&str) -> bool {
+    let mut after_removal_flag = false;
+    let mut seen_env = false;
+    move |word| {
+        if !seen_env {
+            seen_env = *word == "env";
+            return seen_env;
+        }
+        if after_removal_flag {
+            after_removal_flag = false;
+            return true;
+        }
+        if *word == "-u" {
+            after_removal_flag = true;
+            return true;
+        }
+        is_assignment(word)
+    }
 }
 
 /// Returns the complaint about a direct Whitaker command, if any: it must assign the warning
@@ -97,6 +121,19 @@ pub fn command_problem(
     let (text, assignment) = command;
     match assignment {
         Assignment::Flags(flags, inherits) if runs_whitaker(text) => {
+            // Cargo reads the encoded flags in preference to `RUSTFLAGS`, so an inherited value
+            // would displace the warning policy the route assigns.
+            let clears_encoded = text
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .windows(2)
+                .any(|pair| pair == ["-u", "CARGO_ENCODED_RUSTFLAGS"]);
+            if !clears_encoded {
+                return Some(format!(
+                    "`make {target}` on {} lets Whitaker inherit the caller's CARGO_ENCODED_RUSTFLAGS: {text}",
+                    host.make_value()
+                ));
+            }
             isolated_problem(target, host, flags, *inherits)
         }
         other => development_problem(target, host, pin, other),

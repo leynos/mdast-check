@@ -25,7 +25,11 @@ fn lint_with(target: Target<'_>, host: Host, whitaker: &str) -> Result<String, S
 
 /// A fake runner whose Whitaker command is isolated: it assigns only the warning policy.
 fn isolated_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
-    lint_with(target, host, "RUSTFLAGS=\"-D warnings\" whitaker --all")
+    lint_with(
+        target,
+        host,
+        "env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"-D warnings\" whitaker --all",
+    )
 }
 
 /// A fake runner whose Whitaker command carries the development flags.
@@ -34,7 +38,7 @@ fn contaminated_whitaker_make(target: Target<'_>, host: Host) -> Result<String, 
     lint_with(
         target,
         host,
-        &format!("RUSTFLAGS=\"{flags}\" whitaker --all"),
+        &format!("env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"{flags}\" whitaker --all"),
     )
 }
 
@@ -43,13 +47,23 @@ fn inheriting_whitaker_make(target: Target<'_>, host: Host) -> Result<String, St
     lint_with(
         target,
         host,
-        "RUSTFLAGS=\"${RUSTFLAGS:+$RUSTFLAGS }-D warnings\" whitaker --all",
+        "env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"${RUSTFLAGS:+$RUSTFLAGS }-D warnings\" whitaker --all",
     )
+}
+
+/// A fake runner whose Whitaker command assigns the warning policy but leaves the caller's encoded
+/// flags, which Cargo reads in preference to `RUSTFLAGS`.
+fn encoded_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(target, host, "RUSTFLAGS=\"-D warnings\" whitaker --all")
 }
 
 /// A fake runner whose Whitaker command assigns an empty `RUSTFLAGS`, dropping the warning policy.
 fn empty_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
-    lint_with(target, host, "RUSTFLAGS=\"\" whitaker --all")
+    lint_with(
+        target,
+        host,
+        "env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"\" whitaker --all",
+    )
 }
 
 /// A fake runner whose Whitaker command assigns nothing.
@@ -62,7 +76,7 @@ fn capped_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String
     lint_with(
         target,
         host,
-        "RUSTFLAGS=\"-D warnings --cap-lints allow\" whitaker --all",
+        "env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"-D warnings --cap-lints allow\" whitaker --all",
     )
 }
 
@@ -71,13 +85,17 @@ fn plain_expansion_whitaker_make(target: Target<'_>, host: Host) -> Result<Strin
     lint_with(
         target,
         host,
-        "RUSTFLAGS=\"${RUSTFLAGS} -D warnings\" whitaker --all",
+        "env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"${RUSTFLAGS} -D warnings\" whitaker --all",
     )
 }
 
 /// A fake runner whose only Whitaker command is a version probe, so no suite runs.
 fn probe_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
-    lint_with(target, host, "RUSTFLAGS=\"-D warnings\" whitaker --version")
+    lint_with(
+        target,
+        host,
+        "env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"-D warnings\" whitaker --version",
+    )
 }
 
 /// A fake runner whose `lint` recipe runs no Whitaker command at all.
@@ -92,7 +110,7 @@ fn no_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
 fn whitaker_test_filter_make(_target: Target<'_>, host: Host) -> Result<String, String> {
     let linker = linker_flag(host);
     canned(format_args!(
-        "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo test whitaker\nRUSTFLAGS=\"-D warnings\" whitaker --all\n"
+        "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}-D warnings {THREADS_FLAG}{linker}\" cargo test whitaker\nenv -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=\"-D warnings\" whitaker --all\n"
     ))
 }
 
@@ -142,6 +160,7 @@ fn a_direct_whitaker_command_must_stay_isolated_from_the_development_flags() -> 
         ),
         (inheriting_whitaker_make, "inherit the caller's RUSTFLAGS"),
         (empty_whitaker_make, "without -D warnings"),
+        (encoded_whitaker_make, "CARGO_ENCODED_RUSTFLAGS"),
         (capped_whitaker_make, "without -D warnings"),
         (
             plain_expansion_whitaker_make,

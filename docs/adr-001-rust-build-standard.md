@@ -64,7 +64,8 @@ the workflows, so a flag lost through a recipe or workflow edit fails there.
 Whitaker is the one exception to the flag standard above. It runs on its
 installer-managed toolchain, which cannot take the repository's frontend flag
 or linker argument, so its recipe assigns the warning policy alone
-(`RUSTFLAGS="-D warnings"`) and never expands the caller's `RUSTFLAGS`. This
+(`RUSTFLAGS="-D warnings"`), never expands the caller's `RUSTFLAGS`, and clears
+`CARGO_ENCODED_RUSTFLAGS`, which Cargo reads in preference to `RUSTFLAGS`. This
 changes the earlier decision only for that one command: every other recipe
 still restates the standard flags, and the consequence that an assigning recipe
 must restate them stands. The contract holds a direct Whitaker command to this

@@ -74,15 +74,16 @@ recipes that set it compose the standard's flags onto any inherited value (CI's
 `setup-rust` exports one). The `lint` recipe's Whitaker command is a deliberate
 exception: Whitaker runs on its installer-managed toolchain, which must not
 inherit the repository's development flags, so it assigns
-`RUSTFLAGS="$(RUST_FLAGS)"` (`-D warnings`) alone, keeps none of the caller's
-flags and takes neither `-Zthreads=8` nor `mold`, while Clippy in the same
-recipe keeps the standard's flags. Two builds are also deliberately excluded:
-coverage assigns `RUSTFLAGS` without the fast flags, because a measurement
-should not depend on them, and the release recipe and workflow keep the
-platform linker, because they assign `RUSTFLAGS` (even an empty value displaces
-the configuration). Cargo has no per-profile `rustflags`, so a direct
-`cargo build --release` takes the configuration's flags unless `RUSTFLAGS` is
-assigned too.
+`RUSTFLAGS="$(RUST_FLAGS)"` (`-D warnings`) alone, clears
+`CARGO_ENCODED_RUSTFLAGS` (which Cargo reads in preference to `RUSTFLAGS`) with
+`env -u`, keeps none of the caller's flags and takes neither `-Zthreads=8` nor
+`mold`, while Clippy in the same recipe keeps the standard's flags. Two builds
+are also deliberately excluded: coverage assigns `RUSTFLAGS` without the fast
+flags, because a measurement should not depend on them, and the release recipe
+and workflow keep the platform linker, because they assign `RUSTFLAGS` (even an
+empty value displaces the configuration). Cargo has no per-profile `rustflags`,
+so a direct `cargo build --release` takes the configuration's flags unless
+`RUSTFLAGS` is assigned too.
 
 On Linux, install `mold` before building: the configuration names it, so a
 build without it fails at link time. CI installs it through `setup-rust`'s
@@ -94,9 +95,9 @@ in the workflow steps) on a Linux host, and the `setup-rust` steps of the CI
 workflows (each must pass `install-mold`), so a flag lost through a recipe or
 workflow edit fails there. For Whitaker the contract runs the other way: the
 `lint` target must run a Whitaker command that assigns the warning policy,
-inherits nothing and names neither flag, and a Whitaker command that carries a
-development flag, inherits the caller's flags, drops `-D warnings`, or assigns
-nothing fails. The decision is recorded in
+inherits nothing (including encoded flags) and names neither flag, and a
+Whitaker command that carries a development flag, inherits the caller's flags,
+drops `-D warnings`, or assigns nothing fails. The decision is recorded in
 [ADR 001](adr-001-rust-build-standard.md). The contract runs `make -n`, so a
 direct `cargo test` needs GNU make on the `PATH`. It fails when `make` is
 missing instead of skipping, so a missing tool cannot read as a pass.
