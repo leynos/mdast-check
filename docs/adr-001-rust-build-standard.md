@@ -68,10 +68,8 @@ or linker argument, so its recipe assigns the warning policy alone
 `CARGO_ENCODED_RUSTFLAGS`, which Cargo reads in preference to `RUSTFLAGS`. This
 changes the earlier decision only for that one command: every other recipe
 still restates the standard flags, and the consequence that an assigning recipe
-must restate them stands. The contract holds a direct Whitaker command to this
-opposite rule and refuses one that inherits the caller's flags, adds any flag
-to the warning policy, or only probes the executable instead of running the
-suite.
+must restate them stands. The contract exempts a direct Whitaker command from
+the standard's flags, and the Concordat rule checks its isolation.
 
 The development build footprint decision is recorded in the developers' guide
 section "Development build footprint": incremental builds and debug information

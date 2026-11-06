@@ -4,8 +4,7 @@
 
 use super::{
     config::{Flags, LINKER_FLAG, Pin, Problems, THREADS_FLAG},
-    shell::{compiles, shell_commands, without_leading_keywords},
-    whitaker::command_problem,
+    shell::{compiles, runs_whitaker_directly, shell_commands, without_leading_keywords},
 };
 
 /// Makefile targets that build for development. A command in one either assigns
@@ -90,20 +89,11 @@ pub fn assigned_rustflags(line: &str) -> Result<Assignment, String> {
             "inherited RUSTFLAGS glued to the next flag in `{line}`"
         ));
     }
-    // Any other expansion of the caller's flags (`${RUSTFLAGS}`, `$RUSTFLAGS`, `${RUSTFLAGS:-x}`)
-    // inherits them just the same, so it must not read as an assignment of its own.
-    let inherits = assigned.contains("$RUSTFLAGS") || assigned.contains("${RUSTFLAGS");
-    let known = assigned
+    let inherits =
+        assigned.contains("${RUSTFLAGS:+$RUSTFLAGS }") || assigned.contains("${RUSTFLAGS-}");
+    let own = assigned
         .replace("${RUSTFLAGS:+$RUSTFLAGS }", " ")
-        .replace("${RUSTFLAGS-}", " ")
-        .replace("$RUSTFLAGS", " ");
-    // What follows each remaining `${RUSTFLAGS...}` expansion is the assignment's own flags.
-    let mut pieces = known.split("${RUSTFLAGS");
-    let mut own = pieces.next().unwrap_or_default().to_owned();
-    for piece in pieces {
-        own.push(' ');
-        own.push_str(piece.split_once('}').map_or("", |(_, after)| after));
-    }
+        .replace("${RUSTFLAGS-}", " ");
     Ok(Assignment::Flags(
         Flags::from_words(own.split_whitespace()),
         inherits,
@@ -175,7 +165,7 @@ impl<'a> Target<'a> {
 pub type MakeRunner = fn(Target<'_>, Host) -> Result<String, String>;
 
 /// Reads the commands a runner reports for a target on a host, with their text.
-pub(super) fn make_commands(
+fn make_commands(
     runner: MakeRunner,
     target: &str,
     host: Host,
@@ -302,10 +292,13 @@ pub fn development_problems(
             .filter(|(_, command)| matches!(command, Assignment::Flags(..)))
             .count();
         problems.extend(empty_target_problem(target, host, &commands));
+        // A direct Whitaker command runs on an installer-managed toolchain and takes none of the
+        // standard's flags; the Concordat rule checks its isolation.
         problems.extend(
             commands
                 .iter()
-                .filter_map(|command| command_problem(target, host, pin, command)),
+                .filter(|(text, _)| !runs_whitaker_directly(text))
+                .filter_map(|(_, command)| development_problem(target, host, pin, command)),
         );
         problems.extend(test_policy_problems(target, host, &commands));
     }

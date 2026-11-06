@@ -93,14 +93,11 @@ development target on a Linux host and a macOS host (each keeping the caller's
 own `RUSTFLAGS`) and for the release target (the coverage exclusion is checked
 in the workflow steps) on a Linux host, and the `setup-rust` steps of the CI
 workflows (each must pass `install-mold`), so a flag lost through a recipe or
-workflow edit fails there. For Whitaker the contract runs the other way: the
-`lint` target must run a Whitaker command that assigns the warning policy,
-inherits nothing (including encoded flags) and names neither flag, and a
-Whitaker command that carries a development flag, inherits the caller's flags,
-drops `-D warnings`, or assigns nothing fails. The decision is recorded in
-[ADR 001](adr-001-rust-build-standard.md). The contract runs `make -n`, so a
-direct `cargo test` needs GNU make on the `PATH`. It fails when `make` is
-missing instead of skipping, so a missing tool cannot read as a pass.
+workflow edit fails there. The contract exempts a direct Whitaker command from
+the standard's flags; the Concordat rule checks its isolation. The decision is
+recorded in [ADR 001](adr-001-rust-build-standard.md). The contract runs
+`make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
+`make` is missing instead of skipping, so a missing tool cannot read as a pass.
 
 ### Cranelift
 

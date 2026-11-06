@@ -186,11 +186,6 @@ impl Flags {
             || self.0.windows(2).any(|pair| pair == ["-D", "warnings"])
     }
 
-    /// Returns whether the list is the warning policy and nothing else, in either spelling.
-    pub fn is_warning_policy_alone(&self) -> bool {
-        self.0 == ["-Dwarnings"] || self.0 == ["-D", "warnings"]
-    }
-
     /// Returns whether the list names the frontend flag.
     pub fn names_threads(&self) -> bool {
         self.names(THREADS_FLAG)
