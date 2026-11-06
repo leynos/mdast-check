@@ -4,7 +4,7 @@
 
 use super::{
     config::{Flags, LINKER_FLAG, Pin, Problems, THREADS_FLAG},
-    shell::{compiles, shell_commands, without_leading_keywords},
+    shell::{compiles, runs_whitaker_directly, shell_commands, without_leading_keywords},
 };
 
 /// Makefile targets that build for development. A command in one either assigns
@@ -292,9 +292,12 @@ pub fn development_problems(
             .filter(|(_, command)| matches!(command, Assignment::Flags(..)))
             .count();
         problems.extend(empty_target_problem(target, host, &commands));
+        // A direct Whitaker command runs on an installer-managed toolchain and takes none of the
+        // standard's flags; the Concordat rule checks its isolation.
         problems.extend(
             commands
                 .iter()
+                .filter(|(text, _)| !runs_whitaker_directly(text))
                 .filter_map(|(_, command)| development_problem(target, host, pin, command)),
         );
         problems.extend(test_policy_problems(target, host, &commands));

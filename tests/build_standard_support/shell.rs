@@ -93,3 +93,28 @@ pub fn without_leading_keywords(command: &str) -> &str {
     }
     rest
 }
+
+/// Returns whether a command runs Whitaker directly: its first word past leading `NAME=value`
+/// assignments and an `env` wrapper with its `-u NAME` removals is the Whitaker executable.
+pub fn runs_whitaker_directly(command: &str) -> bool {
+    // A quoted value may hold spaces (`RUSTFLAGS="-D warnings"`), so keep only the unquoted spans.
+    let mut words = command
+        .split('"')
+        .step_by(2)
+        .flat_map(str::split_whitespace);
+    let mut next = words.next();
+    while let Some(word) = next {
+        let is_assignment = word.split_once('=').is_some_and(|(name, _)| {
+            !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+        });
+        if word == "env" || is_assignment {
+            next = words.next();
+        } else if word == "-u" {
+            words.next();
+            next = words.next();
+        } else {
+            return word.rsplit('/').next() == Some("whitaker");
+        }
+    }
+    false
+}

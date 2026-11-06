@@ -71,13 +71,19 @@ source repeats the same flags apart from the linker.
 
 An assigned `RUSTFLAGS` replaces the configuration's flags, so the Makefile
 recipes that set it compose the standard's flags onto any inherited value (CI's
-`setup-rust` exports one). Two builds are deliberately excluded: coverage
-assigns `RUSTFLAGS` without the fast flags, because a measurement should not
-depend on them, and the release recipe and workflow keep the platform linker,
-because they assign `RUSTFLAGS` (even an empty value displaces the
-configuration). Cargo has no per-profile `rustflags`, so a direct
-`cargo build --release` takes the configuration's flags unless `RUSTFLAGS` is
-assigned too.
+`setup-rust` exports one). The `lint` recipe's Whitaker command is a deliberate
+exception: Whitaker runs on its installer-managed toolchain, which must not
+inherit the repository's development flags, so it assigns
+`RUSTFLAGS="$(RUST_FLAGS)"` (`-D warnings`) alone, clears
+`CARGO_ENCODED_RUSTFLAGS` (which Cargo reads in preference to `RUSTFLAGS`) with
+`env -u`, keeps none of the caller's flags and takes neither `-Zthreads=8` nor
+`mold`, while Clippy in the same recipe keeps the standard's flags. Two builds
+are also deliberately excluded: coverage assigns `RUSTFLAGS` without the fast
+flags, because a measurement should not depend on them, and the release recipe
+and workflow keep the platform linker, because they assign `RUSTFLAGS` (even an
+empty value displaces the configuration). Cargo has no per-profile `rustflags`,
+so a direct `cargo build --release` takes the configuration's flags unless
+`RUSTFLAGS` is assigned too.
 
 On Linux, install `mold` before building: the configuration names it, so a
 build without it fails at link time. CI installs it through `setup-rust`'s
@@ -87,10 +93,11 @@ development target on a Linux host and a macOS host (each keeping the caller's
 own `RUSTFLAGS`) and for the release target (the coverage exclusion is checked
 in the workflow steps) on a Linux host, and the `setup-rust` steps of the CI
 workflows (each must pass `install-mold`), so a flag lost through a recipe or
-workflow edit fails there. The decision is recorded in
-[ADR 001](adr-001-rust-build-standard.md). The contract runs `make -n`, so a
-direct `cargo test` needs GNU make on the `PATH`. It fails when `make` is
-missing instead of skipping, so a missing tool cannot read as a pass.
+workflow edit fails there. The contract exempts a direct Whitaker command from
+the standard's flags; the Concordat rule checks its isolation. The decision is
+recorded in [ADR 001](adr-001-rust-build-standard.md). The contract runs
+`make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
+`make` is missing instead of skipping, so a missing tool cannot read as a pass.
 
 ### Cranelift
 
@@ -98,7 +105,28 @@ Exception: Cranelift is not the development-profile backend, because the
 repository has no test suite to measure it with. The estate adopts the backend
 only where the full suite passes under it, and a build alone proves nothing
 about miscompilation or unwinding (recorded 2026-09-29, on the pinned
-`nightly-2026-03-05`). The pin is now `nightly-2026-10-30`; the repository
-still has no test suite, so no measurement was taken on it and the exception
-stands without a deferral date. Revisit when the repository has tests: measure
-the whole suite under the backend and adopt it if every test passes.
+`nightly-2026-03-05`). Re-measured on `nightly-2026-11-05` on 2026-11-06 with
+`CARGO_PROFILE_DEV_CODEGEN_BACKEND=cranelift make test`: all 103 tests pass.
+The only tests are the build-standard contract, which reads the Makefile, the
+configuration and the workflows and runs none of the tool's own code, so the
+pass says nothing about miscompilation or unwinding and the exception stands.
+Revisit when the repository has tests of its own behaviour: measure the whole
+suite under the backend and adopt it if every test passes.
+
+## Development build footprint
+
+The repository follows the estate's `rust-dev-build-footprint` rule.
+`.cargo/config.toml`'s default development profile sets `incremental = false`
+and `debug = 0`, and the test profile inherits both, so builds keep no
+incremental state and no debug information and write far fewer intermediate
+artefacts. The trade-off is that a debugger sees no source-level debug
+information or line tables in a default development build (linker symbols
+remain, since `strip` is unset and Cargo's default is `none`) and every rebuild
+recompiles whole crates. To debug, run with `CARGO_PROFILE_DEV_DEBUG=true`; to
+rebuild incrementally, set `CARGO_INCREMENTAL=1`. The same file also sets
+`[unstable] embed-metadata = false`, the native Cargo key for nightlies from
+2026-07-31, so Cargo coordinates metadata output itself. No raw rustc metadata
+flags are used, and the pin is not moved to suit the key. Whoever moves the pin
+across a boundary of the rule must switch the key to match the new pin family.
+Stable Cargo, which builds the release, ignores the `[unstable]` table. The
+concordat rule `rust-dev-build-footprint` checks all three settings.
