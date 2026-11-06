@@ -90,11 +90,20 @@ pub fn assigned_rustflags(line: &str) -> Result<Assignment, String> {
             "inherited RUSTFLAGS glued to the next flag in `{line}`"
         ));
     }
-    let inherits =
-        assigned.contains("${RUSTFLAGS:+$RUSTFLAGS }") || assigned.contains("${RUSTFLAGS-}");
-    let own = assigned
+    // Any other expansion of the caller's flags (`${RUSTFLAGS}`, `$RUSTFLAGS`, `${RUSTFLAGS:-x}`)
+    // inherits them just the same, so it must not read as an assignment of its own.
+    let inherits = assigned.contains("$RUSTFLAGS") || assigned.contains("${RUSTFLAGS");
+    let known = assigned
         .replace("${RUSTFLAGS:+$RUSTFLAGS }", " ")
-        .replace("${RUSTFLAGS-}", " ");
+        .replace("${RUSTFLAGS-}", " ")
+        .replace("$RUSTFLAGS", " ");
+    // What follows each remaining `${RUSTFLAGS...}` expansion is the assignment's own flags.
+    let mut pieces = known.split("${RUSTFLAGS");
+    let mut own = pieces.next().unwrap_or_default().to_owned();
+    for piece in pieces {
+        own.push(' ');
+        own.push_str(piece.split_once('}').map_or("", |(_, after)| after));
+    }
     Ok(Assignment::Flags(
         Flags::from_words(own.split_whitespace()),
         inherits,

@@ -58,3 +58,22 @@ the workflows, so a flag lost through a recipe or workflow edit fails there.
 - A change to a recipe or workflow step that assigns `RUSTFLAGS` must restate
   the flags, and the contract says which clause fails when it does not.
 - Revisit Cranelift when the toolchain or the failing tests change.
+
+## Addendum (2026-11-06)
+
+Whitaker is the one exception to the flag standard above. It runs on its
+installer-managed toolchain, which cannot take the repository's frontend flag
+or linker argument, so its recipe assigns the warning policy alone
+(`RUSTFLAGS="-D warnings"`) and never expands the caller's `RUSTFLAGS`. This
+changes the earlier decision only for that one command: every other recipe
+still restates the standard flags, and the consequence that an assigning recipe
+must restate them stands. The contract holds a direct Whitaker command to this
+opposite rule and refuses one that inherits the caller's flags, adds any flag
+to the warning policy, or only probes the executable instead of running the
+suite.
+
+The development build footprint decision is recorded in the developers' guide
+section "Development build footprint": incremental builds and debug information
+are off in the development profile, and `[unstable] embed-metadata = false`
+keeps rlibs free of embedded metadata. The trade-off is that debugging needs
+`CARGO_PROFILE_DEV_DEBUG=true`.

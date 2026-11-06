@@ -57,6 +57,29 @@ fn bare_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> 
     lint_with(target, host, "whitaker --all")
 }
 
+/// A fake runner whose Whitaker command also lifts the lint caps, so warnings cannot fail it.
+fn capped_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(
+        target,
+        host,
+        "RUSTFLAGS=\"-D warnings --cap-lints allow\" whitaker --all",
+    )
+}
+
+/// A fake runner whose Whitaker command expands the caller's flags without the usual guard.
+fn plain_expansion_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(
+        target,
+        host,
+        "RUSTFLAGS=\"${RUSTFLAGS} -D warnings\" whitaker --all",
+    )
+}
+
+/// A fake runner whose only Whitaker command is a version probe, so no suite runs.
+fn probe_whitaker_make(target: Target<'_>, host: Host) -> Result<String, String> {
+    lint_with(target, host, "RUSTFLAGS=\"-D warnings\" whitaker --version")
+}
+
 /// A fake runner whose `lint` recipe runs no Whitaker command at all.
 fn no_whitaker_make(_target: Target<'_>, host: Host) -> Result<String, String> {
     let linker = linker_flag(host);
@@ -101,6 +124,11 @@ fn a_direct_whitaker_command_must_stay_isolated_from_the_development_flags() -> 
         )?;
         let missing = whitaker_route_problems(no_whitaker_make, host)?;
         ensure(!missing.is_empty(), "a lint recipe without Whitaker passed")?;
+        let probe = whitaker_route_problems(probe_whitaker_make, host)?;
+        ensure(
+            !probe.is_empty(),
+            "a Whitaker version probe passed the route check",
+        )?;
         let bare = whitaker_route_problems(bare_whitaker_make, host)?;
         ensure(
             !bare.is_empty(),
@@ -114,6 +142,11 @@ fn a_direct_whitaker_command_must_stay_isolated_from_the_development_flags() -> 
         ),
         (inheriting_whitaker_make, "inherit the caller's RUSTFLAGS"),
         (empty_whitaker_make, "without -D warnings"),
+        (capped_whitaker_make, "without -D warnings"),
+        (
+            plain_expansion_whitaker_make,
+            "inherit the caller's RUSTFLAGS",
+        ),
     ];
     for (runner, reason) in refused {
         let (problems, _) = development_problems(runner, Host::Linux, pin)?;

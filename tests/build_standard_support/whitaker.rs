@@ -22,20 +22,42 @@ fn is_assignment(word: &str) -> bool {
 /// runs_whitaker("RUSTFLAGS=\"-D warnings\" cargo test whitaker") == false
 /// ```
 pub(super) fn runs_whitaker(command: &str) -> bool {
-    // A quoted value may hold spaces (`RUSTFLAGS="-D warnings"`), so drop each quoted span first.
-    let mut unquoted = String::new();
-    let mut quote = false;
-    for c in command.chars() {
-        match (quote, c) {
-            (_, '"') => quote = !quote,
-            (false, _) => unquoted.push(c),
-            (true, _) => {}
-        }
-    }
-    unquoted
-        .split_whitespace()
-        .find(|word| !is_assignment(word))
-        .is_some_and(|word| word.rsplit('/').next() == Some("whitaker"))
+    command_words(command)
+        .first()
+        .is_some_and(|word| is_whitaker(word))
+}
+
+/// Returns whether a command runs the Whitaker lint suite: it runs Whitaker directly and is not
+/// a probe, so `whitaker --version` and `whitaker --help` do not count.
+///
+/// ```text
+/// runs_whitaker_suite("RUSTFLAGS=\"-D warnings\" whitaker --all") == true
+/// runs_whitaker_suite("RUSTFLAGS=\"-D warnings\" whitaker --version") == false
+/// ```
+pub(super) fn runs_whitaker_suite(command: &str) -> bool {
+    let words = command_words(command);
+    words.first().is_some_and(|word| is_whitaker(word))
+        && !words
+            .iter()
+            .skip(1)
+            .any(|word| matches!(*word, "--version" | "-V" | "--help" | "-h"))
+}
+
+/// Returns whether an executable path names Whitaker.
+fn is_whitaker(word: &str) -> bool {
+    word.rsplit('/').next() == Some("whitaker")
+}
+
+/// Returns the words of a command past its leading environment assignments.
+fn command_words(command: &str) -> Vec<&str> {
+    // A quoted value may hold spaces (`RUSTFLAGS="-D warnings"`), so keep only the unquoted spans,
+    // which are every other piece when the command is split at its quotation marks.
+    command
+        .split('"')
+        .step_by(2)
+        .flat_map(str::split_whitespace)
+        .skip_while(|word| is_assignment(word))
+        .collect()
 }
 
 /// Returns the complaint about a direct Whitaker command, if any: it must assign the warning
@@ -58,8 +80,9 @@ pub(super) fn isolated_problem(
             "`make {target}` on {on} gives Whitaker the development flags: {flags:?}"
         ));
     }
-    (!flags.denies_warnings())
-        .then(|| format!("`make {target}` on {on} runs Whitaker without -D warnings"))
+    (!flags.is_warning_policy_alone()).then(|| {
+        format!("`make {target}` on {on} runs Whitaker without -D warnings alone: {flags:?}")
+    })
 }
 
 /// Returns the complaint about one development command, if any. A direct Whitaker command is held to
@@ -89,12 +112,12 @@ pub fn command_problem(
 pub fn whitaker_route_problems(runner: MakeRunner, host: Host) -> Result<Problems, String> {
     let commands = make_commands(runner, "lint", host)?;
     let isolated = commands.iter().any(|(text, assignment)| {
-        runs_whitaker(text) && matches!(assignment, Assignment::Flags(..))
+        runs_whitaker_suite(text) && matches!(assignment, Assignment::Flags(..))
     });
     let mut problems = Problems::new();
     if !isolated {
         problems.push(format!(
-            "`make lint` on {} runs no Whitaker command that assigns RUSTFLAGS",
+            "`make lint` on {} runs no Whitaker suite command that assigns RUSTFLAGS",
             host.make_value()
         ));
     }

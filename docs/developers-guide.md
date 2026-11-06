@@ -118,10 +118,11 @@ The repository follows the estate's `rust-dev-build-footprint` rule.
 `.cargo/config.toml`'s default development profile sets `incremental = false`
 and `debug = 0`, and the test profile inherits both, so builds keep no
 incremental state and no debug information and write far fewer intermediate
-artefacts. The trade-off is that a debugger sees no symbols or line tables in a
-default development build and every rebuild recompiles whole crates. To debug,
-run with `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
-`CARGO_INCREMENTAL=1`. The same file also sets
+artefacts. The trade-off is that a debugger sees no source-level debug
+information or line tables in a default development build (linker symbols
+remain, since `strip` is unset and Cargo's default is `none`) and every rebuild
+recompiles whole crates. To debug, run with `CARGO_PROFILE_DEV_DEBUG=true`; to
+rebuild incrementally, set `CARGO_INCREMENTAL=1`. The same file also sets
 `[unstable] embed-metadata = false`, the native Cargo key for nightlies from
 2026-07-31, so Cargo coordinates metadata output itself. No raw rustc metadata
 flags are used, and the pin is not moved to suit the key. Whoever moves the pin
