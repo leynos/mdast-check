@@ -105,10 +105,13 @@ Exception: Cranelift is not the development-profile backend, because the
 repository has no test suite to measure it with. The estate adopts the backend
 only where the full suite passes under it, and a build alone proves nothing
 about miscompilation or unwinding (recorded 2026-09-29, on the pinned
-`nightly-2026-03-05`). The pin has since moved; the repository still has no
-test suite, so no measurement was taken on it and the exception stands without
-a deferral date. Revisit when the repository has tests: measure the whole suite
-under the backend and adopt it if every test passes.
+`nightly-2026-03-05`). Re-measured on `nightly-2026-11-05` on 2026-11-06 with
+`CARGO_PROFILE_DEV_CODEGEN_BACKEND=cranelift make test`: all 103 tests pass.
+The only tests are the build-standard contract, which reads the Makefile, the
+configuration and the workflows and runs none of the tool's own code, so the
+pass says nothing about miscompilation or unwinding and the exception stands.
+Revisit when the repository has tests of its own behaviour: measure the whole
+suite under the backend and adopt it if every test passes.
 
 ## Development build footprint
 
