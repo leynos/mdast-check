@@ -95,7 +95,7 @@ in the workflow steps) on a Linux host, and the `setup-rust` steps of the CI
 workflows (each must pass `install-mold`), so a flag lost through a recipe or
 workflow edit fails there. The contract exempts a direct Whitaker command from
 the standard's flags; the Concordat rule checks its isolation. The decision is
-recorded in [ADR 001](adr-001-rust-build-standard.md). The contract runs
+recorded in [ADR 001](adrs/adr-0001-rust-build-standard.md). The contract runs
 `make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
 `make` is missing instead of skipping, so a missing tool cannot read as a pass.
 
