@@ -218,31 +218,36 @@ project:
   - `make lint` executes:
 
     ```makefile
-    RUSTFLAGS="$(STANDARD_RUSTFLAGS)" cargo doc --no-deps
-    RUSTFLAGS="$(STANDARD_RUSTFLAGS)" cargo clippy --all-targets --all-features -- -D warnings
-    env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS="-D warnings" whitaker --all -- --all-targets --all-features
+    RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" \
+      RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) doc --no-deps
+    RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) clippy $(CLIPPY_FLAGS)
+    env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS="$(RUST_FLAGS)" $(WHITAKER) --all -- $(CARGO_FLAGS)
     ```
 
-    building the documentation, linting every target with all features enabled
-    and denying all Clippy warnings, then running the Whitaker Dylint suite with
-    warnings denied.
+    building the documentation, running Clippy over every target with all
+    features enabled, then running the Whitaker Dylint suite. `CLIPPY_FLAGS`
+    defaults to `--all-targets --all-features -- -D warnings`, and `RUST_FLAGS`
+    defaults to `-D warnings`. `RUSTDOC_FLAGS` is unset by default and acts as
+    an override hook for the documentation build.
   - `make test` executes:
 
     ```makefile
-    RUSTFLAGS="-D warnings $(STANDARD_RUSTFLAGS)" cargo test --all-targets --all-features
+    RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS)
     ```
 
-    running the full test suite with warnings denied. The target uses plain
-    `cargo test`; it does not use `cargo-nextest` and has no separate doctest
-    stage.
+    running the full test suite with the warnings in `RUST_FLAGS` denied, and
+    `TEST_FLAGS` defaulting to `--all-targets --all-features`. The target uses
+    plain `cargo test`; it does not use `cargo-nextest` and has no separate
+    doctest stage.
   - Use `make fmt` to apply the formatting fixes reported by `make check-fmt`.
     It runs `cargo fmt --all`, rewrites Markdown tables and wrapping with
     `mdtablefix`, and applies `markdownlint-cli2 --fix`.
 - Development builds apply the build standard. `make build`, the documentation
   and Clippy steps of `make lint`, and `make test` append `-Zthreads=8` (the
   parallel rustc frontend) to any inherited `RUSTFLAGS`, and on Linux also
-  `-Clink-arg=-fuse-ld=mold` to select the `mold` linker. `make release` leaves
-  `RUSTFLAGS` unchanged.
+  `-Clink-arg=-fuse-ld=mold` to select the `mold` linker. `make release` passes
+  any inherited `RUSTFLAGS` through unchanged. When none is set, it assigns an
+  empty `RUSTFLAGS`, which overrides the `rustflags` in `.cargo/config.toml`.
 - Clippy warnings MUST be disallowed.
 - Fix any warnings emitted during tests in the code itself rather than
   silencing them.
