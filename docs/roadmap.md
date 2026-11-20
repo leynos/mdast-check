@@ -13,8 +13,10 @@ and keeps phases, steps, and tasks measurable.
   See `mdast-schema-validation-cli-design.md` §User-facing contract.
   - [ ] Parse `--document`, `--schema`, `--schema-format`, `--config`,
     `--format`, `--fail-fast`, `--max-errors`, and `--quiet`.
-  - [ ] Load configuration through `ortho-config` v0.11.0 with CLI overrides
-    taking precedence over config file values.
+  - [ ] Load configuration through `ortho-config` v0.11.0 from a `--config`
+    file and `MDAST_CHECK_CMDS_VALIDATE_*` environment variables, with CLI
+    overrides taking precedence over environment values, and environment
+    values over config file values.
   - [ ] Localize command help and argument-parsing errors through
     `ortho-config` v0.11.0.
   - [ ] Return stable exit codes for success, validation failure, invalid
