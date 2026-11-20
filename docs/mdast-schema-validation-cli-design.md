@@ -71,9 +71,10 @@ references alongside this design:
   `json-schema-validator-core` for schema validation.
 - Testing must combine unit tests, snapshot tests, and Behaviour-Driven
   Development (BDD) scenarios using `rstest` and `rstest-bdd`.
-- Configuration and CLI parsing must use `ortho-config` v0.8.0 so the tool can
-  evolve without inventing a parallel configuration model. Follow the layering
-  and composition guidance in
+- Configuration and CLI parsing must use `ortho-config` v0.11.0 so the tool can
+  evolve without inventing a parallel configuration model, and so command help
+  and argument-parsing errors can be localized through the same library. Follow
+  the layering, composition, and localization guidance in
   [OrthoConfig user's guide](./ortho-config-users-guide.md).
 - Large fixture documents should live in `.fixture` files and be loaded with
   `include_str!` to keep tests legible and diffable.
@@ -264,7 +265,7 @@ path when the failure has a schema location.
 
 ### Schema configuration
 
-`ortho-config` v0.8.0 should own configuration loading for:
+`ortho-config` v0.11.0 should own configuration loading for:
 
 - default schema path,
 - default output format,

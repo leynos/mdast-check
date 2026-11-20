@@ -13,8 +13,10 @@ and keeps phases, steps, and tasks measurable.
   See `mdast-schema-validation-cli-design.md` §User-facing contract.
   - [ ] Parse `--document`, `--schema`, `--schema-format`, `--config`,
     `--format`, `--fail-fast`, `--max-errors`, and `--quiet`.
-  - [ ] Load configuration through `ortho-config` v0.8.0 with CLI overrides
+  - [ ] Load configuration through `ortho-config` v0.11.0 with CLI overrides
     taking precedence over config file values.
+  - [ ] Localize command help and argument-parsing errors through
+    `ortho-config` v0.11.0.
   - [ ] Return stable exit codes for success, validation failure, invalid
     invocation, schema failure, Markdown parse failure, and internal failure.
 - [ ] 1.1.2. Define the crate-local error taxonomy.
