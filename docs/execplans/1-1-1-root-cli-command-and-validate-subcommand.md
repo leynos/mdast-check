@@ -210,7 +210,7 @@ learn from.
   `AGENTS.md` forbids `#[allow]`. Severity: low. Likelihood: medium.
   Mitigation: design tests so no suppression is needed (fallible tests return
   `Result`; `expect` is permitted in tests by `clippy.toml`).
-- Risk: `rstest-bdd` step functions are not recognised as tests, so
+- Risk: `rstest-bdd` step functions are not recognized as tests, so
   `clippy::expect_used` fires inside them (observed in the prior attempt).
   Severity: low. Likelihood: high. Mitigation: steps return
   `Result<(), StepError>` and use `?`; no suppression.
