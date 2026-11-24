@@ -113,6 +113,16 @@ pass says nothing about miscompilation or unwinding and the exception stands.
 Revisit when the repository has tests of its own behaviour: measure the whole
 suite under the backend and adopt it if every test passes.
 
+## Cognitive complexity
+
+Cognitive complexity is not gated by Clippy. Clippy's `cognitive_complexity`
+scores code after macro expansion, so it counts branching a macro generated,
+and neither `Cargo.toml` nor `clippy.toml` enables it. Whitaker's experimental
+`macro_aware_cognitive_complexity` gates it at `max_complexity = 9`,
+CodeScene's ceiling. `dylint.toml` opts in with
+`[whitaker] experimental = ["macro_aware_cognitive_complexity"]`. Fix a finding
+by extracting named helpers, never by raising the threshold.
+
 ## Development build footprint
 
 The repository follows the estate's `rust-dev-build-footprint` rule.
